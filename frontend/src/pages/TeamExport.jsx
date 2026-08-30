@@ -28,7 +28,7 @@ export default function TeamExport() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/reports/export?${params.toString()}`,
+        `https://erm-3w28.onrender.com/api/reports/export?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

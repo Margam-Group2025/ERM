@@ -29,7 +29,7 @@ export default function AssignTask() {
     const fetchTeamMembers = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/users?department=${department}`,
+          `https://erm-3w28.onrender.com/api/users?department=${department}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -53,7 +53,7 @@ export default function AssignTask() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/tasks", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

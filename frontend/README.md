@@ -120,7 +120,7 @@ npm run dev
 ```
 
 The app runs at `http://localhost:5173` (frontend) and
-`http://localhost:5000` (backend API).
+`https://erm-3w28.onrender.com` (backend API).
 
 ### First Admin account
 

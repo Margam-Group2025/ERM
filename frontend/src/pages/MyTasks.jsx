@@ -33,7 +33,7 @@ export default function MyTasks() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/tasks/mine", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/tasks/mine", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -57,7 +57,7 @@ export default function MyTasks() {
 
     setUpdatingId(task._id);
     try {
-      const res = await fetch(`http://localhost:5000/api/tasks/${task._id}/status`, {
+      const res = await fetch(`https://erm-3w28.onrender.com/api/tasks/${task._id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
