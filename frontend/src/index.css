@@ -1,0 +1,113 @@
+/* ===== Add this to your existing src/index.css (after the @tailwind directives) ===== */
+
+@import "tailwindcss";
+
+/* ===== Add this to your existing src/index.css (AFTER the @tailwind directives) ===== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root {
+  --ink: #0B1220;
+  --panel: #121B2E;
+  --panel-border: #1E2A42;
+  --amber: #E8A33D;
+  --amber-dim: #B97F2A;
+  --mist: #8B93A7;
+  --paper: #F3EFE6;
+  --success: #4ADE80;
+  --error: #F87171;
+}
+
+body {
+  background-color: var(--ink);
+  font-family: 'Inter', sans-serif;
+}
+
+.font-display { font-family: 'Space Grotesk', sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ---------- Login page ---------- */
+
+@keyframes ledger-drift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.animate-ledger-drift { animation: ledger-drift 24s linear infinite; }
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+.animate-glow-pulse { animation: glow-pulse 5s ease-in-out infinite; }
+
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+}
+.animate-orb-float { animation: orb-float 12s ease-in-out infinite; }
+
+@keyframes orb-float-delayed {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -40px) scale(1.15); }
+}
+.animate-orb-float-delayed { animation: orb-float-delayed 15s ease-in-out infinite 1s; }
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-fade-in-left { animation: fade-in-left 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(232, 163, 61, 0.5); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(232, 163, 61, 0); }
+}
+.animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+@keyframes pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.4s ease; }
+
+/* ---------- Dashboard ---------- */
+
+@keyframes field-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-field-in {
+  opacity: 0;
+  animation: field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tab-underline {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.animate-tab-underline { animation: tab-underline 0.25s ease forwards; }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 1.2s linear infinite; }
