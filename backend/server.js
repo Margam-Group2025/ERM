@@ -27,9 +27,14 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// routes will be added here later, e.g.:
-// app.use("/api/auth", require("./routes/authRoutes"));
-// app.use("/api/reports", require("./routes/reportRoutes"));
+// all routes
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/departments", require("./routes/departmentRoutes"));
+app.use("/api/teams", require("./routes/teamRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/templates", require("./routes/templateRoutes"));
+app.use("/api/reports", require("./routes/reportRoutes"));
+app.use("/api/tasks", require("./routes/taskRoutes"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
