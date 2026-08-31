@@ -10,6 +10,7 @@ import AssignTask from "./pages/AssignTask";
 import MyTasks from "./pages/MyTasks";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ManageUsers from "./pages/ManageUsers";
+import TeamExport from "./pages/TeamExport";
 
 function App() {
   return (
@@ -32,6 +33,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["teamlead"]}>
               <AssignTask />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teamlead/export"
+          element={
+            <ProtectedRoute allowedRoles={["teamlead"]}>
+              <TeamExport />
             </ProtectedRoute>
           }
         />
