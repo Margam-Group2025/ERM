@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import ExportReports from "./pages/ExportReports";
 import Login from "./pages/Login";
 import TeamLeadDashboard from "./pages/TeamLeadDashboard";
@@ -11,15 +12,18 @@ import MyTasks from "./pages/MyTasks";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ManageUsers from "./pages/ManageUsers";
 import TeamExport from "./pages/TeamExport";
+import AdminReports from "./pages/AdminReports";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login Page */}
+
+        {/* Login */}
         <Route path="/" element={<Login />} />
 
-        {/* Team Lead Dashboard — only teamlead can access */}
+        {/* ================= TEAM LEAD ================= */}
+
         <Route
           path="/teamlead"
           element={
@@ -28,6 +32,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/teamlead/tasks"
           element={
@@ -36,6 +41,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/teamlead/export"
           element={
@@ -45,7 +51,18 @@ function App() {
           }
         />
 
-        {/* Employee Dashboard — only employee can access */}
+        {/* Team Lead Report */}
+        <Route
+          path="/teamlead/report"
+          element={
+            <ProtectedRoute allowedRoles={["teamlead"]}>
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= EMPLOYEE ================= */}
+
         <Route
           path="/dashboard"
           element={
@@ -54,6 +71,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/tasks"
           element={
@@ -63,7 +81,8 @@ function App() {
           }
         />
 
-        {/* Admin section — only admin can access */}
+        {/* ================= ADMIN ================= */}
+
         <Route
           path="/admin"
           element={
@@ -73,10 +92,28 @@ function App() {
           }
         >
           <Route index element={<TemplateBuilder />} />
-          <Route path="users" element={<AddUser />} />
-          <Route path="export" element={<ExportReports />} />
-          <Route path="team" element={<ManageUsers />} />
+
+          <Route
+            path="users"
+            element={<AddUser />}
+          />
+
+          <Route
+            path="export"
+            element={<ExportReports />}
+          />
+
+          <Route
+            path="team"
+            element={<ManageUsers />}
+          />
+
+          <Route
+            path="reports"
+            element={<AdminReports />}
+          />
         </Route>
+
       </Routes>
     </BrowserRouter>
   );

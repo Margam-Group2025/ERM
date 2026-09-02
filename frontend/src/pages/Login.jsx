@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle"
 import {
   Eye,
   EyeOff,
@@ -185,7 +186,7 @@ export default function Login() {
                 Secure employee workspace
               </p>
             </div>
-
+            <ThemeToggle />
             {/* Login Card */}
             <div className="relative overflow-hidden rounded-3xl border border-(--panel-border) bg-(--panel)/80 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
               {/* Card glow */}

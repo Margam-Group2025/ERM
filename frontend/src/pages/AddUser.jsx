@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { UserPlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-
+import BackButton from "../components/BackButton";
 export default function AddUser() {
   const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState({
@@ -73,6 +73,7 @@ export default function AddUser() {
   return (
     <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
       <div className="max-w-md mx-auto">
+        <BackButton to="/dashboard" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <UserPlus size={14} />

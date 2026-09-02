@@ -122,4 +122,31 @@ const updateReport = async (req, res) => {
   }
 };
 
-module.exports = { createReport, getMyReports, getReportById, updateReport };
+module.exports = { createReport, getMyReports, getReportById, updateReport, uploadAttachment };
+
+// @route  POST /api/reports/:id/attachment
+// @desc   Attach a photo/file to a report the employee owns (multipart/form-data, field name "file")
+async function uploadAttachment(req, res) {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    if (report.employee.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You can only attach files to your own reports" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    report.attachment = {
+      filename: req.file.originalname,
+      url: req.file.path, // Cloudinary's storage engine sets this to the full https URL
+    };
+    await report.save();
+
+    res.status(200).json(report);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}

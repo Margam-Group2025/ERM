@@ -9,15 +9,16 @@ const app = express();
 connectDB();
 
 // middleware
-// allow requests only from your deployed frontend (and localhost for local dev)
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL, // set this in Render's env vars after Vercel deploy
-];
-
+// allow any localhost port during development (Vite shifts ports if 5173
+// is busy), plus the deployed frontend URL in production
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // Postman/server-to-server calls
+      if (origin.startsWith("http://localhost:")) return callback(null, true);
+      if (origin === process.env.FRONTEND_URL) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
   })
 );
 app.use(express.json()); // lets us read req.body in JSON
@@ -35,6 +36,7 @@ app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/templates", require("./routes/templateRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
+app.use("/api/uploads", require("./routes/uploadRoutes"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

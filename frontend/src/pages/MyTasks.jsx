@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import BackButton from "../components/BackButton";
 import {
   ListChecks,
   FileText,
@@ -82,6 +83,7 @@ export default function MyTasks() {
   return (
     <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
       <div className="max-w-2xl mx-auto">
+        <BackButton to="/dashboard" />
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">

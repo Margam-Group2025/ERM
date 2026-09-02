@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FileSpreadsheet, Download, Loader2, AlertCircle } from "lucide-react";
-
+import BackButton from "../components/BackButton";
 export default function ExportReports() {
   const [departments, setDepartments] = useState([]);
   const [filters, setFilters] = useState({
@@ -74,6 +74,7 @@ export default function ExportReports() {
   return (
     <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
       <div className="max-w-xl mx-auto">
+                <BackButton to="/dashboard" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <FileSpreadsheet size={14} />

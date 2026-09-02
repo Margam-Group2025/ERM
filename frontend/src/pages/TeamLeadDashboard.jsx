@@ -5,6 +5,7 @@ import {
   ClipboardList,
   ClipboardPlus,
   FileSpreadsheet,
+  FileText,
   Check,
   X,
   RotateCcw,
@@ -36,7 +37,7 @@ export default function TeamLeadDashboard() {
     const fetchDepartmentName = async () => {
       try {
         const departmentId = localStorage.getItem("department");
-        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch("http://localhost:5000/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -55,7 +56,7 @@ export default function TeamLeadDashboard() {
     setLoading(true);
     try {
       const query = statusFilter ? `?status=${statusFilter}` : "";
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/team/all${query}`, {
+      const res = await fetch(`http://localhost:5000/api/reports/team/all${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -74,7 +75,7 @@ export default function TeamLeadDashboard() {
   const handleReview = async (id, decision) => {
     setReviewingId(id);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/${id}/review`, {
+      const res = await fetch(`http://localhost:5000/api/reports/${id}/review`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -113,7 +114,14 @@ export default function TeamLeadDashboard() {
             )}
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 flex-wrap shrink-0">
+            <Link
+              to="/teamlead/report"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium"
+            >
+              <FileText size={16} />
+              File report
+            </Link>
             <Link
               to="/teamlead/export"
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium"
@@ -204,7 +212,18 @@ export default function TeamLeadDashboard() {
                     <p className="text-[10px] font-mono uppercase text-[var(--mist)]">
                       {key}
                     </p>
-                    <p className="text-sm text-[var(--paper)]">{String(value) || "—"}</p>
+                    {typeof value === "string" && value.startsWith("http") ? (
+                      <a
+                        href={value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-[var(--amber)] hover:text-[var(--amber-dim)] underline"
+                      >
+                        View file
+                      </a>
+                    ) : (
+                      <p className="text-sm text-[var(--paper)]">{String(value) || "—"}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -266,6 +285,17 @@ export default function TeamLeadDashboard() {
                 <p className="text-xs text-[var(--mist)] italic mt-3">
                   "{report.reviewComment}"
                 </p>
+              )}
+
+              {report.attachment && (
+                <a
+                  href={report.attachment.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-[var(--amber)] hover:text-[var(--amber-dim)] transition-colors"
+                >
+                  📎 {report.attachment.filename}
+                </a>
               )}
             </motion.div>
           ))}

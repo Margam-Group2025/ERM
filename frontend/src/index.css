@@ -111,3 +111,60 @@ body {
   to { transform: rotate(360deg); }
 }
 .animate-spin-slow { animation: spin-slow 1.2s linear infinite; }
+/* ===== Add this to src/index.css, AFTER your existing :root block ===== */
+
+/* dark is the default (already in :root). Light theme overrides when
+   <html data-theme="light"> is set by ThemeContext. */
+[data-theme="light"] {
+  --ink: #F7F4EC;
+  --panel: #FFFFFF;
+  --panel-border: #E4DFD1;
+  --amber: #C97F1E;
+  --amber-dim: #A8681A;
+  --mist: #6B7280;
+  --paper: #1A1F2B;
+  --success: #16A34A;
+  --error: #DC2626;
+}
+
+/* smooth transition when switching themes */
+body, .bg-\[var\(--panel\)\], .bg-\[var\(--ink\)\] {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* tells the browser's native date/week/month picker popup which
+   palette to render itself in — without this it can render dark
+   text on a dark background and become unreadable */
+input[type="date"],
+input[type="week"],
+input[type="month"] {
+  color-scheme: dark;
+}
+
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="week"],
+[data-theme="light"] input[type="month"] {
+  color-scheme: light;
+}
+
+/* we already render our own Calendar icon on the left of these inputs —
+   hide the browser's built-in icon so there isn't a second, invisible-on-dark one.
+   `position: relative` on the input itself is essential here — without it, the
+   absolutely-positioned indicator escapes the input and can cover the whole page. */
+input[type="date"],
+input[type="week"],
+input[type="month"] {
+  position: relative;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}

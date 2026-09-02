@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ClipboardPlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-
+import BackButton from "../components/BackButton";
 const PRIORITY_STYLES = {
   low: "border-[var(--panel-border)] text-[var(--mist)]",
   medium: "border-[var(--amber)]/40 text-[var(--amber)]",
@@ -81,6 +81,7 @@ export default function AssignTask() {
   return (
     <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
       <div className="max-w-xl mx-auto">
+        <BackButton to="/teamlead" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <ClipboardPlus size={14} />

@@ -10,7 +10,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const FIELD_TYPES = ["text", "textarea", "number", "date", "select", "checkbox"];
+const FIELD_TYPES = ["text", "textarea", "number", "date", "select", "checkbox", "file"];
 
 export default function TemplateBuilder() {
   const [departments, setDepartments] = useState([]);
@@ -24,7 +24,7 @@ export default function TemplateBuilder() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+      const res = await fetch("http://localhost:5000/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -42,7 +42,7 @@ export default function TemplateBuilder() {
     const loadExisting = async () => {
       try {
         const res = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -99,7 +99,7 @@ export default function TemplateBuilder() {
 
     try {
       // try create first; if it already exists, fall back to update
-      const createRes = await fetch("https://erm-3w28.onrender.com/api/templates", {
+      const createRes = await fetch("http://localhost:5000/api/templates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -111,13 +111,13 @@ export default function TemplateBuilder() {
       if (createRes.status === 400) {
         // template already exists for this department + reportType — fetch its id then update
         const existingRes = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const existing = await existingRes.json();
 
         const updateRes = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/${existing._id}`,
+          `http://localhost:5000/api/templates/${existing._id}`,
           {
             method: "PUT",
             headers: {

@@ -23,7 +23,7 @@ const getTeamReports = async (req, res) => {
     const reports = await Report.find(filter)
       .populate("employee", "name employeeId")
       .populate("department", "name")
-      .sort({ reportDate: -1 });
+      .sort({ createdAt: -1 }); // newest submitted report first
 
     res.status(200).json(reports);
   } catch (err) {

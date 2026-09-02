@@ -16,7 +16,7 @@ const fieldSchema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: ["text", "textarea", "number", "date", "select", "checkbox"],
+      enum: ["text", "textarea", "number", "date", "select", "checkbox", "file"],
     },
     required: {
       type: Boolean,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   FileText,
@@ -9,6 +9,8 @@ import {
   AlertCircle,
   Inbox,
   ListChecks,
+  Calendar,
+  Paperclip,
 } from "lucide-react";
 
 export default function EmployeeDashboard() {
@@ -18,6 +20,50 @@ export default function EmployeeDashboard() {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [submitStatus, setSubmitStatus] = useState("idle"); // idle | saving | success | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [attachment, setAttachment] = useState(null);
+  const [uploadingField, setUploadingField] = useState(null); // which field key is currently uploading
+  const periodInputRef = useRef(null);
+
+  // what the employee picks depends on reportType:
+  // daily -> a specific date, weekly -> a week, monthly -> a month.
+  // Defaults to the current period so most days nobody has to touch it.
+  const getDefaultPeriod = (type) => {
+    const now = new Date();
+    if (type === "monthly") {
+      return now.toISOString().slice(0, 7); // "YYYY-MM"
+    }
+    if (type === "weekly") {
+      // ISO week string "YYYY-Www"
+      const jan4 = new Date(now.getFullYear(), 0, 4);
+      const dayDiff = (now - jan4) / 86400000;
+      const week = Math.ceil((dayDiff + jan4.getDay() + 1) / 7);
+      return `${now.getFullYear()}-W${String(week).padStart(2, "0")}`;
+    }
+    return now.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  };
+
+  const [period, setPeriod] = useState(getDefaultPeriod("daily"));
+
+  // converts whatever the employee picked into a single reportDate the
+  // backend can store (for weekly: the Monday of that week; for monthly:
+  // the 1st of that month)
+  const periodToReportDate = () => {
+    if (reportType === "monthly") {
+      return `${period}-01`;
+    }
+    if (reportType === "weekly") {
+      const [yearStr, weekStr] = period.split("-W");
+      const year = parseInt(yearStr, 10);
+      const week = parseInt(weekStr, 10);
+      const simple = new Date(year, 0, 1 + (week - 1) * 7);
+      const dow = simple.getDay();
+      const monday = new Date(simple);
+      if (dow <= 4) monday.setDate(simple.getDate() - dow + 1);
+      else monday.setDate(simple.getDate() + 8 - dow);
+      return monday.toISOString().split("T")[0];
+    }
+    return period; // daily — already "YYYY-MM-DD"
+  };
 
   const token = localStorage.getItem("token");
   const department = localStorage.getItem("department");
@@ -28,7 +74,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     const fetchDepartmentName = async () => {
       try {
-        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch("http://localhost:5000/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -44,6 +90,7 @@ export default function EmployeeDashboard() {
   }, []);
 
   useEffect(() => {
+    setPeriod(getDefaultPeriod(reportType));
     const fetchTemplate = async () => {
       setLoadingTemplate(true);
       setTemplate(null);
@@ -51,7 +98,7 @@ export default function EmployeeDashboard() {
       setSubmitStatus("idle");
       try {
         const res = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -76,11 +123,35 @@ export default function EmployeeDashboard() {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
+  // for "file" type fields: upload immediately on selection, store the
+  // resulting URL as the field's value (same as any other field's value)
+  const handleFileFieldUpload = async (key, file) => {
+    if (!file) return;
+    setUploadingField(key);
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+      const res = await fetch("http://localhost:5000/api/uploads", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: uploadData,
+      });
+      const result = await res.json();
+      if (res.ok) {
+        handleFieldChange(key, result.url);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const handleSubmit = async (status) => {
     setSubmitStatus("saving");
     setErrorMsg("");
     try {
-      const res = await fetch("https://erm-3w28.onrender.com/api/reports", {
+      const res = await fetch("http://localhost:5000/api/reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,7 +159,7 @@ export default function EmployeeDashboard() {
         },
         body: JSON.stringify({
           reportType,
-          reportDate: new Date().toISOString().split("T")[0],
+          reportDate: periodToReportDate(),
           data: formData,
           status,
         }),
@@ -99,6 +170,20 @@ export default function EmployeeDashboard() {
         setErrorMsg(data.message || "Something went wrong");
         return;
       }
+
+      // if a file was selected, upload it separately and attach it to the
+      // report we just created
+      if (attachment) {
+        const formData = new FormData();
+        formData.append("file", attachment);
+        await fetch(`http://localhost:5000/api/reports/${data._id}/attachment`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        setAttachment(null);
+      }
+
       setSubmitStatus("success");
     } catch (err) {
       console.error(err);
@@ -163,6 +248,40 @@ export default function EmployeeDashboard() {
             className={commonClasses}
           />
         );
+      case "file":
+        return (
+          <div>
+            <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-[var(--panel-border)] text-[var(--mist)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors cursor-pointer text-sm">
+              {uploadingField === field.key ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Paperclip size={16} />
+              )}
+              {uploadingField === field.key
+                ? "Uploading…"
+                : formData[field.key]
+                ? "Replace file"
+                : "Choose a photo or PDF"}
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                onChange={(e) => handleFileFieldUpload(field.key, e.target.files[0])}
+                className="hidden"
+                disabled={uploadingField === field.key}
+              />
+            </label>
+            {formData[field.key] && (
+              <a
+                href={formData[field.key]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[var(--success)] mt-1 inline-block"
+              >
+                ✓ File uploaded — view
+              </a>
+            )}
+          </div>
+        );
       default:
         return (
           <input
@@ -176,15 +295,38 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--ink)] p-4 sm:p-6 lg:p-10">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8 flex items-start justify-between gap-4 animate-field-in">
+        {/* illustration banner */}
+        <div className="relative mb-6 rounded-2xl overflow-hidden border border-[var(--panel-border)] bg-[var(--panel)] animate-field-in">
+          <svg viewBox="0 0 400 120" className="w-full h-24 sm:h-28" preserveAspectRatio="xMidYMid slice">
+            <rect width="400" height="120" fill="var(--panel)" />
+            {/* soft amber glow */}
+            <circle cx="70" cy="30" r="70" fill="var(--amber)" opacity="0.12" />
+            <circle cx="340" cy="100" r="60" fill="#60A5FA" opacity="0.08" />
+            {/* ledger rows motif */}
+            {[0, 1, 2, 3, 4].map((i) => (
+              <g key={i} opacity={0.5 - i * 0.08}>
+                <rect x={230 + i * 6} y={20 + i * 18} width="130" height="10" rx="3" fill="var(--mist)" opacity="0.15" />
+                <rect x={230 + i * 6} y={20 + i * 18} width="60" height="10" rx="3" fill="var(--amber)" opacity="0.25" />
+              </g>
+            ))}
+            {/* clipboard-check mark */}
+            <g transform="translate(40, 35)">
+              <rect x="0" y="4" width="48" height="60" rx="6" fill="none" stroke="var(--amber)" strokeWidth="3" />
+              <rect x="14" y="0" width="20" height="10" rx="3" fill="var(--amber)" />
+              <path d="M12 38 L22 48 L38 26" fill="none" stroke="var(--success)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+          </svg>
+        </div>
+
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4 animate-field-in">
           <div>
             <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
               <FileText size={14} />
               Employee Dashboard
             </span>
-            <h1 className="font-display text-3xl font-semibold text-[var(--paper)] mt-1">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--paper)] mt-1">
               File a report
             </h1>
             {departmentName && (
@@ -204,7 +346,7 @@ export default function EmployeeDashboard() {
         </div>
 
         {/* report type tabs */}
-        <div className="flex gap-2 mb-6 animate-field-in" style={{ animationDelay: "0.05s" }}>
+        <div className="flex gap-2 mb-4 animate-field-in" style={{ animationDelay: "0.05s" }}>
           {["daily", "weekly", "monthly"].map((type) => (
             <button
               key={type}
@@ -218,6 +360,28 @@ export default function EmployeeDashboard() {
               {type}
             </button>
           ))}
+        </div>
+
+        {/* period picker — what "daily/weekly/monthly" actually means for this report */}
+        <div className="mb-6 animate-field-in" style={{ animationDelay: "0.08s" }}>
+          <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
+            {reportType === "daily" && "Report date"}
+            {reportType === "weekly" && "Report week"}
+            {reportType === "monthly" && "Report month"}
+          </label>
+          <div
+            className="relative flex items-center bg-[var(--panel)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer max-w-xs"
+            onClick={() => periodInputRef.current?.showPicker?.()}
+          >
+            <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
+            <input
+              ref={periodInputRef}
+              type={reportType === "daily" ? "date" : reportType === "weekly" ? "week" : "month"}
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="w-full bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer"
+            />
+          </div>
         </div>
 
         <div className="bg-[var(--panel)] border border-[var(--panel-border)] rounded-2xl p-8 transition-all duration-300">
@@ -268,6 +432,22 @@ export default function EmployeeDashboard() {
                   Report saved successfully.
                 </div>
               )}
+
+              <div>
+                <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
+                  Attach photo/file (optional)
+                </label>
+                <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-[var(--panel-border)] text-[var(--mist)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors cursor-pointer text-sm">
+                  <Paperclip size={16} />
+                  {attachment ? attachment.name : "Choose a photo or PDF (max 5MB)"}
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                    onChange={(e) => setAttachment(e.target.files[0] || null)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
               <div className="flex gap-3 pt-2">
                 <button

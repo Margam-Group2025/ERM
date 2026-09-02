@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import BackButton from "../components/BackButton";
 import {
   Users,
   Crown,
@@ -82,6 +83,7 @@ export default function ManageUsers() {
   return (
     <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
       <div className="max-w-3xl mx-auto">
+        <BackButton to="/dashboard" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <Users size={14} />
