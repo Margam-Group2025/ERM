@@ -22,10 +22,10 @@ export default function AdminReports() {
   useEffect(() => {
     const fetchInitial = async () => {
       const [deptRes, userRes] = await Promise.all([
-        fetch("http://https://erm-3w28.onrender.com/api/departments", {
+        fetch("https://erm-3w28.onrender.com/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://https://erm-3w28.onrender.com/api/users?role=teamlead", {
+        fetch("https://erm-3w28.onrender.com/api/users?role=teamlead", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -53,7 +53,7 @@ export default function AdminReports() {
         if (value) params.append(key, value);
       });
       const res = await fetch(
-        `http://https://erm-3w28.onrender.com/api/reports/team/all?${params.toString()}`,
+        `https://erm-3w28.onrender.com/api/reports/team/all?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();

@@ -74,7 +74,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     const fetchDepartmentName = async () => {
       try {
-        const res = await fetch("http://https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -98,7 +98,7 @@ export default function EmployeeDashboard() {
       setSubmitStatus("idle");
       try {
         const res = await fetch(
-          `http://https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
+          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -131,7 +131,7 @@ export default function EmployeeDashboard() {
     try {
       const uploadData = new FormData();
       uploadData.append("file", file);
-      const res = await fetch("http://https://erm-3w28.onrender.com/api/uploads", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/uploads", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: uploadData,
@@ -151,7 +151,7 @@ export default function EmployeeDashboard() {
     setSubmitStatus("saving");
     setErrorMsg("");
     try {
-      const res = await fetch("http://https://erm-3w28.onrender.com/api/reports", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +176,7 @@ export default function EmployeeDashboard() {
       if (attachment) {
         const formData = new FormData();
         formData.append("file", attachment);
-        await fetch(`http://https://erm-3w28.onrender.com/api/reports/${data._id}/attachment`, {
+        await fetch(`https://erm-3w28.onrender.com/api/reports/${data._id}/attachment`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
