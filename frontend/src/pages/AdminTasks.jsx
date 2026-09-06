@@ -40,7 +40,7 @@ export default function AdminTasks() {
 
   useEffect(() => {
     const fetchTeamLeads = async () => {
-      const res = await fetch("http://localhost:5000/api/users?role=teamlead", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/users?role=teamlead", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -56,7 +56,7 @@ export default function AdminTasks() {
     setLoadingTasks(true);
     try {
       const res = await fetch(
-        "http://localhost:5000/api/tasks/team?assignedToRole=teamlead",
+        "https://erm-3w28.onrender.com/api/tasks/team?assignedToRole=teamlead",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -80,7 +80,7 @@ export default function AdminTasks() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/tasks", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
