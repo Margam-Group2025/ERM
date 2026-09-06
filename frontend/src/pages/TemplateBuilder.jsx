@@ -16,6 +16,7 @@ export default function TemplateBuilder() {
   const [departments, setDepartments] = useState([]);
   const [department, setDepartment] = useState("");
   const [reportType, setReportType] = useState("daily");
+  const [role, setRole] = useState("employee");
   const [fields, setFields] = useState([]);
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | success | error
   const [errorMsg, setErrorMsg] = useState("");
@@ -24,7 +25,7 @@ export default function TemplateBuilder() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+      const res = await fetch("http://localhost:5000/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -36,13 +37,13 @@ export default function TemplateBuilder() {
     fetchDepartments();
   }, []);
 
-  // load an existing template (if any) whenever department/reportType changes
+  // load an existing template (if any) whenever department/reportType/role changes
   useEffect(() => {
     if (!department) return;
     const loadExisting = async () => {
       try {
         const res = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}&role=${role}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -56,7 +57,7 @@ export default function TemplateBuilder() {
       }
     };
     loadExisting();
-  }, [department, reportType]);
+  }, [department, reportType, role]);
 
   const addField = () => {
     setFields((prev) => [
@@ -99,25 +100,25 @@ export default function TemplateBuilder() {
 
     try {
       // try create first; if it already exists, fall back to update
-      const createRes = await fetch("https://erm-3w28.onrender.com/api/templates", {
+      const createRes = await fetch("http://localhost:5000/api/templates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ department, reportType, fields: preparedFields }),
+        body: JSON.stringify({ department, reportType, role, fields: preparedFields }),
       });
 
       if (createRes.status === 400) {
-        // template already exists for this department + reportType — fetch its id then update
+        // template already exists for this department + reportType + role — fetch its id then update
         const existingRes = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}&role=${role}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const existing = await existingRes.json();
 
         const updateRes = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/${existing._id}`,
+          `http://localhost:5000/api/templates/${existing._id}`,
           {
             method: "PUT",
             headers: {
@@ -185,6 +186,27 @@ export default function TemplateBuilder() {
                 }`}
               >
                 {type}
+              </button>
+            ))}
+          </div>
+
+          {/* which role this form is for — a department can have a
+              different report form for Employees vs their Team Lead */}
+          <div className="flex gap-2">
+            {[
+              { key: "employee", label: "Employee form" },
+              { key: "teamlead", label: "Team Lead form" },
+            ].map((r) => (
+              <button
+                key={r.key}
+                onClick={() => setRole(r.key)}
+                className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide transition-all duration-200 ${
+                  role === r.key
+                    ? "bg-[#60A5FA] text-[var(--ink)]"
+                    : "bg-[var(--panel)] text-[var(--mist)] border border-[var(--panel-border)]"
+                }`}
+              >
+                {r.label}
               </button>
             ))}
           </div>

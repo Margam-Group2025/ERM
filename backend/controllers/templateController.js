@@ -4,7 +4,8 @@ const ReportTemplate = require("../models/ReportTemplate");
 // @desc   Admin creates a report template for a department + reportType
 const createTemplate = async (req, res) => {
   try {
-    const { department, reportType, fields } = req.body;
+    const { department, reportType, role, fields } = req.body;
+    const templateRole = role || "employee";
 
     if (!department || !reportType || !fields || !fields.length) {
       return res.status(400).json({
@@ -12,15 +13,20 @@ const createTemplate = async (req, res) => {
       });
     }
 
-    const existing = await ReportTemplate.findOne({ department, reportType });
+    const existing = await ReportTemplate.findOne({ department, reportType, role: templateRole });
     if (existing) {
       return res.status(400).json({
         message:
-          "A template already exists for this department + report type. Use update instead.",
+          "A template already exists for this department + report type + role. Use update instead.",
       });
     }
 
-    const template = await ReportTemplate.create({ department, reportType, fields });
+    const template = await ReportTemplate.create({
+      department,
+      reportType,
+      role: templateRole,
+      fields,
+    });
     res.status(201).json(template);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -34,6 +40,7 @@ const getTemplates = async (req, res) => {
     const filter = {};
     if (req.query.department) filter.department = req.query.department;
     if (req.query.reportType) filter.reportType = req.query.reportType;
+    if (req.query.role) filter.role = req.query.role;
 
     const templates = await ReportTemplate.find(filter)
       .populate("department", "name")
@@ -45,12 +52,14 @@ const getTemplates = async (req, res) => {
   }
 };
 
-// @route  GET /api/templates/active?department=<id>&reportType=daily
-// @desc   What the Employee's form-render screen will call — gets the one
-// active template for their department + the report type they picked.
+// @route  GET /api/templates/active?department=<id>&reportType=daily&role=employee
+// @desc   What the report-filing screen calls — gets the one active template
+// for a department + report type + role (Admin can define a different form
+// for Employees vs Team Leads in the same department).
 const getActiveTemplate = async (req, res) => {
   try {
-    const { department, reportType } = req.query;
+    const { department, reportType, role } = req.query;
+    const templateRole = role || "employee";
 
     if (!department || !reportType) {
       return res.status(400).json({ message: "department and reportType are required" });
@@ -59,12 +68,13 @@ const getActiveTemplate = async (req, res) => {
     const template = await ReportTemplate.findOne({
       department,
       reportType,
+      role: templateRole,
       isActive: true,
     });
 
     if (!template) {
       return res.status(404).json({
-        message: "No active template found for this department/report type yet",
+        message: "No active template found for this department/report type/role yet",
       });
     }
 

@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   Users,
   Eye,
+  ClipboardPlus,
   LogOut,
   ShieldCheck,
   Menu,
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/admin/reports", label: "View Reports", icon: Eye },
   { to: "/admin/users", label: "Add User", icon: UserPlus },
   { to: "/admin/team", label: "Manage Team", icon: Users },
+  { to: "/admin/tasks", label: "Assign Tasks", icon: ClipboardPlus },
   { to: "/admin/export", label: "Export Reports", icon: FileSpreadsheet },
 ];
 

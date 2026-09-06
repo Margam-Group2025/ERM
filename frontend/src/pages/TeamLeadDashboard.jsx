@@ -6,6 +6,7 @@ import {
   ClipboardPlus,
   FileSpreadsheet,
   FileText,
+  ListChecks,
   Check,
   X,
   RotateCcw,
@@ -37,7 +38,7 @@ export default function TeamLeadDashboard() {
     const fetchDepartmentName = async () => {
       try {
         const departmentId = localStorage.getItem("department");
-        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch("http://localhost:5000/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -56,7 +57,7 @@ export default function TeamLeadDashboard() {
     setLoading(true);
     try {
       const query = statusFilter ? `?status=${statusFilter}` : "";
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/team/all${query}`, {
+      const res = await fetch(`http://localhost:5000/api/reports/team/all${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -75,7 +76,7 @@ export default function TeamLeadDashboard() {
   const handleReview = async (id, decision) => {
     setReviewingId(id);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/${id}/review`, {
+      const res = await fetch(`http://localhost:5000/api/reports/${id}/review`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -128,6 +129,13 @@ export default function TeamLeadDashboard() {
             >
               <FileSpreadsheet size={16} />
               Export
+            </Link>
+            <Link
+              to="/teamlead/my-tasks"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium"
+            >
+              <ListChecks size={16} />
+              My tasks
             </Link>
             <Link
               to="/teamlead/tasks"

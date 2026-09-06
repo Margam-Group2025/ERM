@@ -48,6 +48,14 @@ const reportTemplateSchema = new Schema(
       enum: ["daily", "weekly", "monthly"],
       required: true,
     },
+    role: {
+      // which role this template is for — lets Admin define a different
+      // form for Employees vs Team Leads in the same department
+      type: String,
+      enum: ["employee", "teamlead"],
+      required: true,
+      default: "employee",
+    },
     fields: {
       type: [fieldSchema],
       validate: (v) => Array.isArray(v) && v.length > 0,
@@ -60,7 +68,10 @@ const reportTemplateSchema = new Schema(
   { timestamps: true }
 );
 
-// one active template per department + reportType combo
-reportTemplateSchema.index({ department: 1, reportType: 1 }, { unique: true });
+// one active template per department + reportType + role combo
+reportTemplateSchema.index(
+  { department: 1, reportType: 1, role: 1 },
+  { unique: true }
+);
 
 module.exports = mongoose.model("ReportTemplate", reportTemplateSchema);

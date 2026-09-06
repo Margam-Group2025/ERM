@@ -18,9 +18,15 @@ const createReport = async (req, res) => {
       return res.status(400).json({ message: "reportType, reportDate and data are required" });
     }
 
+    // Team Leads can also file their own reports (spec section 3), and Admin
+    // may have defined a different form for them than for Employees —
+    // match on the submitter's actual role.
+    const templateRole = req.user.role === "teamlead" ? "teamlead" : "employee";
+
     const template = await ReportTemplate.findOne({
       department,
       reportType,
+      role: templateRole,
       isActive: true,
     });
 
