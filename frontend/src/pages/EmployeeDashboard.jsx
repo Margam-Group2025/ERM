@@ -434,7 +434,7 @@ export default function EmployeeDashboard() {
                 </div>
               )}
 
-              <div>
+              {/* <div>
                 <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
                   Attach photo/file (optional)
                 </label>
@@ -448,7 +448,7 @@ export default function EmployeeDashboard() {
                     className="hidden"
                   />
                 </label>
-              </div>
+              </div> */}
 
               <div className="flex gap-3 pt-2">
                 <button

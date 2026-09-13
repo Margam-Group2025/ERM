@@ -8,9 +8,80 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  X,
 } from "lucide-react";
 
 const FIELD_TYPES = ["text", "textarea", "number", "date", "select", "checkbox", "file"];
+
+// small helper component: type an option and press Enter (or comma) to add
+// it as a chip. Click the × on a chip to remove it. Much clearer for admins
+// than typing a raw comma-separated string.
+function OptionEditor({ options, onChange }) {
+  const [draft, setDraft] = useState("");
+
+  const addOption = () => {
+    const trimmed = draft.trim();
+    if (trimmed && !options.includes(trimmed)) {
+      onChange([...options, trimmed]);
+    }
+    setDraft("");
+  };
+
+  const removeOption = (opt) => {
+    onChange(options.filter((o) => o !== opt));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addOption();
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {options.map((opt) => (
+          <span
+            key={opt}
+            className="flex items-center gap-1.5 bg-[var(--ink)] border border-[var(--panel-border)] text-[var(--paper)] text-xs rounded-full pl-3 pr-2 py-1"
+          >
+            {opt}
+            <button
+              type="button"
+              onClick={() => removeOption(opt)}
+              className="text-[var(--mist)] hover:text-[var(--error)]"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type an option, press Enter to add"
+          className="flex-1 bg-transparent text-[var(--paper)] py-1.5 px-1 outline-none border-b border-[var(--panel-border)] focus:border-[var(--amber)] transition-colors text-xs font-mono"
+        />
+        <button
+          type="button"
+          onClick={addOption}
+          className="text-xs text-[var(--amber)] hover:text-[var(--amber-dim)] font-medium px-2"
+        >
+          Add
+        </button>
+      </div>
+      {options.length === 0 && (
+        <p className="text-[10px] text-[var(--mist)] mt-1">
+          No options yet — this dropdown will be empty for employees until you add some.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function TemplateBuilder() {
   const [departments, setDepartments] = useState([]);
@@ -25,7 +96,7 @@ export default function TemplateBuilder() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+      const res = await fetch("http://localhost:5000/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -43,7 +114,7 @@ export default function TemplateBuilder() {
     const loadExisting = async () => {
       try {
         const res = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}&role=${role}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}&role=${role}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -100,7 +171,7 @@ export default function TemplateBuilder() {
 
     try {
       // try create first; if it already exists, fall back to update
-      const createRes = await fetch("https://erm-3w28.onrender.com/api/templates", {
+      const createRes = await fetch("http://localhost:5000/api/templates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,13 +183,13 @@ export default function TemplateBuilder() {
       if (createRes.status === 400) {
         // template already exists for this department + reportType + role — fetch its id then update
         const existingRes = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}&role=${role}`,
+          `http://localhost:5000/api/templates/active?department=${department}&reportType=${reportType}&role=${role}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const existing = await existingRes.json();
 
         const updateRes = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/${existing._id}`,
+          `http://localhost:5000/api/templates/${existing._id}`,
           {
             method: "PUT",
             headers: {
@@ -272,19 +343,12 @@ export default function TemplateBuilder() {
                   </div>
 
                   {field.type === "select" && (
-                    <input
-                      type="text"
-                      placeholder="Comma-separated options (e.g. Not Started, In Progress, Done)"
-                      value={field.options?.join(", ") || ""}
-                      onChange={(e) =>
-                        updateField(
-                          field._uid,
-                          "options",
-                          e.target.value.split(",").map((s) => s.trim()).filter(Boolean)
-                        )
-                      }
-                      className="col-span-full bg-transparent text-[var(--paper)] py-1.5 px-1 outline-none border-b border-[var(--panel-border)] focus:border-[var(--amber)] transition-colors text-xs font-mono"
-                    />
+                    <div className="col-span-full">
+                      <OptionEditor
+                        options={field.options || []}
+                        onChange={(newOptions) => updateField(field._uid, "options", newOptions)}
+                      />
+                    </div>
                   )}
                 </div>
               </motion.div>
