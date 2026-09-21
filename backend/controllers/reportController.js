@@ -66,7 +66,21 @@ const createReport = async (req, res) => {
 // @desc   Logged-in user's own report history
 const getMyReports = async (req, res) => {
   try {
-    const reports = await Report.find({ employee: req.user._id }).sort({ reportDate: -1 });
+    const filter = { employee: req.user._id };
+
+    if (req.query.startDate || req.query.endDate) {
+      filter.reportDate = {};
+      if (req.query.startDate) filter.reportDate.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) filter.reportDate.$lte = new Date(req.query.endDate);
+    }
+
+    // ?limit=2 gives the "last 2 reports" quick view; omit it for full history
+    const limit = parseInt(req.query.limit, 10);
+
+    const query = Report.find(filter).sort({ createdAt: -1 }); // newest submitted first
+    if (limit > 0) query.limit(limit);
+
+    const reports = await query;
     res.status(200).json(reports);
   } catch (err) {
     res.status(500).json({ message: err.message });

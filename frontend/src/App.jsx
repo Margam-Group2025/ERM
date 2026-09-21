@@ -14,6 +14,7 @@ import ManageUsers from "./pages/ManageUsers";
 import TeamExport from "./pages/TeamExport";
 import AdminReports from "./pages/AdminReports";
 import AdminTasks from "./pages/AdminTasks";
+import MyReports from "./pages/MyReports"; 
 function App() {
   return (
     <BrowserRouter>
@@ -60,6 +61,13 @@ function App() {
             </ProtectedRoute>
           }
         />
+         <Route 
+         path="/teamlead/my-reports" 
+         element={ <ProtectedRoute allowedRoles={["teamlead"]}> 
+         <MyReports />
+        </ProtectedRoute> } 
+        />
+
         <Route 
         path="/teamlead/my-tasks" 
         element={ 
@@ -86,7 +94,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+         <Route 
+         path="/my-reports"
+          element={ <ProtectedRoute allowedRoles={["employee"]}> 
+          <MyReports /> 
+          </ProtectedRoute> } />
         {/* ================= ADMIN ================= */}
 
         <Route
@@ -123,7 +135,7 @@ function App() {
              element={<AdminTasks />}
             /> 
         </Route>
-
+         
       </Routes>
     </BrowserRouter>
   );

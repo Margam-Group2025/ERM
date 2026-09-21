@@ -11,13 +11,17 @@ const exportReportsToExcel = async (req, res) => {
 
     const filter = {};
 
-    if (req.user.role === "teamlead") {
+    if (req.user.role === "employee") {
+      // an employee can only ever export their OWN reports
+      filter.employee = req.user._id;
+    } else if (req.user.role === "teamlead") {
       filter.department = req.user.department; // locked, ignores query param
+      if (req.query.onlyMine === "true") filter.employee = req.user._id;
     } else if (req.query.department) {
       filter.department = req.query.department;
     }
 
-    if (employee) filter.employee = employee;
+    if (employee && req.user.role !== "employee") filter.employee = employee;
     if (reportType) filter.reportType = reportType;
     if (status) filter.status = status;
 

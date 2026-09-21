@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Loader2, Inbox, Crown, Calendar } from "lucide-react";
+
+const API = import.meta.env.VITE_API_URL;
 
 const STATUS_STYLES = {
   submitted: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",
@@ -12,33 +14,47 @@ const STATUS_STYLES = {
 
 export default function AdminReports() {
   const [departments, setDepartments] = useState([]);
+  const [allUsers, setAllUsers] = useState([]); // for the employee filter dropdown
   const [teamLeadByDept, setTeamLeadByDept] = useState({}); // departmentId -> lead name
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ department: "", reportType: "", status: "" });
+  const [filters, setFilters] = useState({
+    department: "",
+    reportType: "",
+    status: "",
+    submitterRole: "",
+    employee: "",
+    startDate: "",
+    endDate: "",
+  });
+  const startRef = useRef(null);
+  const endRef = useRef(null);
 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchInitial = async () => {
       const [deptRes, userRes] = await Promise.all([
-        fetch("https://erm-3w28.onrender.com/api/departments", {
+        fetch(`${API}/api/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("https://erm-3w28.onrender.com/api/users?role=teamlead", {
+        fetch(`${API}/api/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
       const deptData = await deptRes.json();
-      const leads = await userRes.json();
+      const users = await userRes.json();
 
       if (Array.isArray(deptData)) setDepartments(deptData);
-      if (Array.isArray(leads)) {
+      if (Array.isArray(users)) {
+        setAllUsers(users.filter((u) => u.role !== "admin"));
         const map = {};
-        leads.forEach((lead) => {
-          const deptId = lead.department?._id || lead.department;
-          if (deptId) map[deptId] = lead.name;
-        });
+        users
+          .filter((u) => u.role === "teamlead")
+          .forEach((lead) => {
+            const deptId = lead.department?._id || lead.department;
+            if (deptId) map[deptId] = lead.name;
+          });
         setTeamLeadByDept(map);
       }
     };
@@ -53,7 +69,7 @@ export default function AdminReports() {
         if (value) params.append(key, value);
       });
       const res = await fetch(
-        `https://erm-3w28.onrender.com/api/reports/team/all?${params.toString()}`,
+        `${API}/api/reports/team/all?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -86,6 +102,27 @@ export default function AdminReports() {
           <p className="text-[var(--mist)] text-sm mt-1">
             See every report by department, employee, and team lead — no download needed.
           </p>
+        </div>
+
+        {/* who submitted — keeps employee reports and team lead reports separate */}
+        <div className="flex gap-2 mb-4">
+          {[
+            { key: "", label: "All" },
+            { key: "employee", label: "Employee reports" },
+            { key: "teamlead", label: "Team Lead reports" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => updateFilter("submitterRole", tab.key)}
+              className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide transition-all duration-200 ${
+                filters.submitterRole === tab.key
+                  ? "bg-[#60A5FA] text-[var(--ink)]"
+                  : "bg-[var(--panel)] text-[var(--mist)] border border-[var(--panel-border)] hover:border-[var(--mist)]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* filters */}
@@ -126,6 +163,60 @@ export default function AdminReports() {
             <option value="sent_back">Sent back</option>
             <option value="draft">Draft</option>
           </select>
+
+          {/* pick a specific employee/team lead by name+ID to see only their reports */}
+          <select
+            value={filters.employee}
+            onChange={(e) => updateFilter("employee", e.target.value)}
+            className="bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--paper)] rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--amber)] max-w-[220px]"
+          >
+            <option value="">All employees</option>
+            {allUsers.map((u) => (
+              <option key={u._id} value={u._id}>
+                {u.name} ({u.employeeId})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* date range — filters by the report's period date */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          <div
+            className="relative flex items-center bg-[var(--panel)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
+            onClick={() => startRef.current?.showPicker?.()}
+          >
+            <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
+            <input
+              ref={startRef}
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => updateFilter("startDate", e.target.value)}
+              className="bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer text-sm"
+              placeholder="From"
+            />
+          </div>
+          <div
+            className="relative flex items-center bg-[var(--panel)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
+            onClick={() => endRef.current?.showPicker?.()}
+          >
+            <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
+            <input
+              ref={endRef}
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => updateFilter("endDate", e.target.value)}
+              className="bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer text-sm"
+              placeholder="To"
+            />
+          </div>
+          {(filters.startDate || filters.endDate) && (
+            <button
+              onClick={() => setFilters((f) => ({ ...f, startDate: "", endDate: "" }))}
+              className="text-xs text-[var(--mist)] hover:text-[var(--amber)] transition-colors"
+            >
+              Clear dates
+            </button>
+          )}
         </div>
 
         {/* current department's team lead, shown when a single department is selected */}
@@ -164,11 +255,16 @@ export default function AdminReports() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="font-display font-semibold text-[var(--paper)]">
+                  <p className="font-display font-semibold text-[var(--paper)] flex items-center gap-2 flex-wrap">
                     {report.employee?.name}{" "}
                     <span className="text-[var(--mist)] font-mono text-xs">
                       ({report.employee?.employeeId})
                     </span>
+                    {report.employee?.role === "teamlead" && (
+                      <span className="text-[10px] font-mono uppercase tracking-wide border border-[#60A5FA]/40 bg-[#60A5FA]/10 text-[#60A5FA] rounded-full px-2 py-0.5">
+                        Team Lead
+                      </span>
+                    )}
                   </p>
                   <p className="text-[var(--mist)] text-xs font-mono mt-0.5">
                     {deptName(report.department?._id || report.department)} ·{" "}

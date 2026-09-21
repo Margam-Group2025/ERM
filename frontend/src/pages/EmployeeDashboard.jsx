@@ -11,6 +11,7 @@ import {
   ListChecks,
   Calendar,
   Paperclip,
+  History,
 } from "lucide-react";
 
 export default function EmployeeDashboard() {
@@ -344,6 +345,9 @@ export default function EmployeeDashboard() {
             <ListChecks size={16} />
             My tasks
           </Link>
+           <Link to="/my-reports" 
+           className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium" >
+           <History size={16} /> My reports </Link> 
         </div>
 
         {/* report type tabs */}

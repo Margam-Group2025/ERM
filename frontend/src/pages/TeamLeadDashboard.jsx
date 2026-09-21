@@ -13,6 +13,7 @@ import {
   Loader2,
   Inbox,
   MessageSquare,
+  History,
 } from "lucide-react";
 
 const STATUS_STYLES = {
@@ -144,6 +145,9 @@ export default function TeamLeadDashboard() {
               <ClipboardPlus size={16} />
               Assign task
             </Link>
+            <Link to="/my-reports" 
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium" > 
+            <History size={16} /> My reports </Link>
           </div>
         </div>
 

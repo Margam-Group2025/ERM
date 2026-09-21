@@ -19,7 +19,9 @@ router.post("/:id/attachment", protect, upload("file"), uploadAttachment);
 
 // Admin: filter + download Excel (any department). Team Lead can also
 // export, but is locked to their own department in the controller.
-router.get("/export", protect, authorize("admin", "teamlead"), exportReportsToExcel);
+// Admin exports any department, Team Lead their own department, Employee
+// only their own reports — the controller scopes the filter by role.
+router.get("/export", protect, exportReportsToExcel);
 
 // Team Lead / Admin: view team/department reports and review them
 router.get("/team/all", protect, authorize("teamlead", "admin"), getTeamReports);

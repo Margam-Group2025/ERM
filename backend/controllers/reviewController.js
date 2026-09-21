@@ -1,4 +1,5 @@
 const Report = require("../models/Report");
+const User = require("../models/User");
 
 // @route  GET /api/reports/team/all
 // @desc   Team Lead views all reports from their OWN department only.
@@ -20,8 +21,15 @@ const getTeamReports = async (req, res) => {
     if (req.query.reportType) filter.reportType = req.query.reportType;
     if (req.query.employee) filter.employee = req.query.employee;
 
+    // let Admin/Team Lead split the list by who submitted it — an employee
+    // or a team lead — instead of seeing both mixed together
+    if (req.query.submitterRole) {
+      const usersWithRole = await User.find({ role: req.query.submitterRole }).select("_id");
+      filter.employee = { $in: usersWithRole.map((u) => u._id) };
+    }
+
     const reports = await Report.find(filter)
-      .populate("employee", "name employeeId")
+      .populate("employee", "name employeeId role")
       .populate("department", "name")
       .sort({ createdAt: -1 }); // newest submitted report first
 
