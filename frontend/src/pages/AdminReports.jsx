@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Loader2, Inbox, Crown, Calendar } from "lucide-react";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_URL  || "https://erm-3w28.onrender.com";;
 
 const STATUS_STYLES = {
   submitted: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",
@@ -265,6 +265,11 @@ export default function AdminReports() {
                         Team Lead
                       </span>
                     )}
+                    {report.isEdited && (
+                      <span className="text-[10px] font-mono uppercase tracking-wide border border-[#60A5FA]/40 bg-[#60A5FA]/10 text-[#60A5FA] rounded-full px-2 py-0.5">
+                        edited
+                      </span>
+                    )}
                   </p>
                   <p className="text-[var(--mist)] text-xs font-mono mt-0.5">
                     {deptName(report.department?._id || report.department)} ·{" "}
@@ -294,7 +299,12 @@ export default function AdminReports() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4">
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
-                    <p className="text-[10px] font-mono uppercase text-[var(--mist)]">{key}</p>
+                    <p className="text-[10px] font-mono uppercase text-[var(--mist)]">
+                      {key}
+                      {report.editedFields?.includes(key) && (
+                        <span className="text-[#60A5FA] normal-case ml-1">(edited)</span>
+                      )}
+                    </p>
                     {typeof value === "string" && value.startsWith("http") ? (
                       <a
                         href={value}

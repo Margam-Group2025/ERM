@@ -10,6 +10,7 @@ import {
   FileText,
   AlertCircle,
   ChevronDown,
+  Pencil,
 } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL;
@@ -36,6 +37,14 @@ export default function MyReports() {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
   const backTo = role === "teamlead" ? "/teamlead" : "/dashboard";
+
+  // matches the backend's same-day + not-yet-reviewed rule, so the Edit
+  // button only appears when editing would actually succeed
+  const isEditable = (report) => {
+    const submittedDay = new Date(report.createdAt).toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+    return submittedDay === today && !["approved", "rejected"].includes(report.status);
+  };
 
   const fetchReports = async () => {
     setLoading(true);
@@ -244,25 +253,47 @@ export default function MyReports() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="font-display font-semibold text-[var(--paper)] capitalize">
+                  <p className="font-display font-semibold text-[var(--paper)] capitalize flex items-center gap-2 flex-wrap">
                     {report.reportType} report
+                    {report.isEdited && (
+                      <span className="flex items-center gap-1 text-[10px] normal-case text-[#60A5FA] border border-[#60A5FA]/40 bg-[#60A5FA]/10 rounded-full px-2 py-0.5">
+                        <Pencil size={9} />
+                        edited
+                      </span>
+                    )}
                   </p>
                   <p className="text-[var(--mist)] text-xs font-mono mt-0.5">
                     Period: {new Date(report.reportDate).toLocaleDateString()} · Submitted{" "}
                     {new Date(report.createdAt).toLocaleString()}
                   </p>
                 </div>
-                <span
-                  className={`text-[10px] font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 shrink-0 ${STATUS_STYLES[report.status]}`}
-                >
-                  {report.status.replace("_", " ")}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span
+                    className={`text-[10px] font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 ${STATUS_STYLES[report.status]}`}
+                  >
+                    {report.status.replace("_", " ")}
+                  </span>
+                  {isEditable(report) && (
+                    <Link
+                      to={`/reports/${report._id}/edit`}
+                      className="flex items-center gap-1 text-xs font-medium text-[var(--amber)] hover:text-[var(--amber-dim)] transition-colors"
+                    >
+                      <Pencil size={12} />
+                      Edit
+                    </Link>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4">
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
-                    <p className="text-[10px] font-mono uppercase text-[var(--mist)]">{key}</p>
+                    <p className="text-[10px] font-mono uppercase text-[var(--mist)] flex items-center gap-1">
+                      {key}
+                      {report.editedFields?.includes(key) && (
+                        <span className="text-[#60A5FA] normal-case">(edited)</span>
+                      )}
+                    </p>
                     {typeof value === "string" && value.startsWith("http") ? (
                       <a
                         href={value}

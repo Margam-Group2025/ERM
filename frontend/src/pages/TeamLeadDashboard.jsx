@@ -13,7 +13,6 @@ import {
   Loader2,
   Inbox,
   MessageSquare,
-  History,
 } from "lucide-react";
 
 const STATUS_STYLES = {
@@ -39,7 +38,7 @@ export default function TeamLeadDashboard() {
     const fetchDepartmentName = async () => {
       try {
         const departmentId = localStorage.getItem("department");
-        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch("http://localhost:5000/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -58,7 +57,7 @@ export default function TeamLeadDashboard() {
     setLoading(true);
     try {
       const query = statusFilter ? `?status=${statusFilter}` : "";
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/team/all${query}`, {
+      const res = await fetch(`http://localhost:5000/api/reports/team/all${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -77,7 +76,7 @@ export default function TeamLeadDashboard() {
   const handleReview = async (id, decision) => {
     setReviewingId(id);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/${id}/review`, {
+      const res = await fetch(`http://localhost:5000/api/reports/${id}/review`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -145,9 +144,6 @@ export default function TeamLeadDashboard() {
               <ClipboardPlus size={16} />
               Assign task
             </Link>
-            <Link to="/my-reports" 
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium" > 
-            <History size={16} /> My reports </Link>
           </div>
         </div>
 
@@ -200,11 +196,16 @@ export default function TeamLeadDashboard() {
             >
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <p className="font-display font-semibold text-[var(--paper)]">
+                  <p className="font-display font-semibold text-[var(--paper)] flex items-center gap-2 flex-wrap">
                     {report.employee?.name}{" "}
                     <span className="text-[var(--mist)] font-mono text-xs">
                       ({report.employee?.employeeId})
                     </span>
+                    {report.isEdited && (
+                      <span className="flex items-center gap-1 text-[10px] font-mono uppercase text-[#60A5FA] border border-[#60A5FA]/40 bg-[#60A5FA]/10 rounded-full px-2 py-0.5">
+                        edited
+                      </span>
+                    )}
                   </p>
                   <p className="text-[var(--mist)] text-xs font-mono mt-0.5">
                     {report.reportType} · {new Date(report.reportDate).toLocaleDateString()}
@@ -223,6 +224,9 @@ export default function TeamLeadDashboard() {
                   <div key={key}>
                     <p className="text-[10px] font-mono uppercase text-[var(--mist)]">
                       {key}
+                      {report.editedFields?.includes(key) && (
+                        <span className="text-[#60A5FA] normal-case ml-1">(edited)</span>
+                      )}
                     </p>
                     {typeof value === "string" && value.startsWith("http") ? (
                       <a

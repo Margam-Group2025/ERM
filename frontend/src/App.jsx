@@ -15,6 +15,7 @@ import TeamExport from "./pages/TeamExport";
 import AdminReports from "./pages/AdminReports";
 import AdminTasks from "./pages/AdminTasks";
 import MyReports from "./pages/MyReports"; 
+import EditReport from "./pages/EditReport"
 function App() {
   return (
     <BrowserRouter>
@@ -99,6 +100,13 @@ function App() {
           element={ <ProtectedRoute allowedRoles={["employee"]}> 
           <MyReports /> 
           </ProtectedRoute> } />
+
+          <Route
+           path="/reports/:id/edit"
+            element={ 
+            <ProtectedRoute 
+               allowedRoles={["employee", "teamlead"]}>
+               <EditReport /> </ProtectedRoute> } />
         {/* ================= ADMIN ================= */}
 
         <Route
