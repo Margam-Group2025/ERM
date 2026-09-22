@@ -99,11 +99,9 @@ const getReportById = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // an employee may only view their own report; teamlead/admin handled in review routes
-    if (
-      req.user.role === "employee" &&
-      report.employee._id.toString() !== req.user._id.toString()
-    ) {
+    // any logged-in user may only view their OWN report (unless the
+    // review routes handle broader access separately)
+    if (report.employee._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -114,7 +112,10 @@ const getReportById = async (req, res) => {
 };
 
 // @route  PUT /api/reports/:id
-// @desc   Employee edits their own draft, or a report sent back for correction
+// @desc   Employee or Team Lead edits their own report — allowed on any
+// status EXCEPT approved/rejected, and ONLY on the same calendar day it
+// was first submitted. Tracks which fields actually changed so the UI can
+// show "(edited)" next to them.
 const updateReport = async (req, res) => {
   try {
     const { data, status } = req.body;
@@ -128,11 +129,35 @@ const updateReport = async (req, res) => {
       return res.status(403).json({ message: "You can only edit your own reports" });
     }
 
-    if (!["draft", "sent_back"].includes(report.status)) {
-      return res.status(400).json({ message: "Only draft or sent-back reports can be edited" });
+    if (["approved", "rejected"].includes(report.status)) {
+      return res
+        .status(400)
+        .json({ message: "This report has already been reviewed and can no longer be edited" });
     }
 
-    if (data) report.data = data;
+    // editing is only allowed on the same day the report was submitted
+    const submittedDay = report.createdAt.toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+    if (submittedDay !== today) {
+      return res
+        .status(400)
+        .json({ message: "This report can only be edited on the day it was submitted" });
+    }
+
+    if (data) {
+      // figure out which fields actually changed compared to what's saved now
+      const changedKeys = Object.keys(data).filter(
+        (key) => JSON.stringify(data[key]) !== JSON.stringify(report.data?.[key])
+      );
+      if (changedKeys.length > 0) {
+        const merged = new Set([...(report.editedFields || []), ...changedKeys]);
+        report.editedFields = Array.from(merged);
+        report.isEdited = true;
+        report.editedAt = new Date();
+      }
+      report.data = data;
+    }
+
     if (status === "draft" || status === "submitted") report.status = status;
 
     await report.save();

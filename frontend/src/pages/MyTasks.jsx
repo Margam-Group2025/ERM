@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import BackButton from "../components/BackButton";
 import {
   ListChecks,
   FileText,
@@ -34,7 +33,7 @@ export default function MyTasks() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://erm-3w28.onrender.com/api/tasks/mine", {
+      const res = await fetch("http://localhost:5000/api/tasks/mine", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -58,7 +57,7 @@ export default function MyTasks() {
 
     setUpdatingId(task._id);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/tasks/${task._id}/status`, {
+      const res = await fetch(`http://localhost:5000/api/tasks/${task._id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -81,16 +80,15 @@ export default function MyTasks() {
     deadline && status !== "completed" && new Date(deadline) < new Date();
 
   return (
-    <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--ink)] p-4 sm:p-6 lg:p-10">
       <div className="max-w-2xl mx-auto">
-        <BackButton to="/dashboard" />
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
               <ListChecks size={14} />
               Employee
             </span>
-            <h1 className="font-display text-3xl font-semibold text-[var(--paper)] mt-1">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--paper)] mt-1">
               My tasks
             </h1>
           </div>

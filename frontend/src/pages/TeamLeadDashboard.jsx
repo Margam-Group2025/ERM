@@ -97,7 +97,7 @@ export default function TeamLeadDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--ink)] p-4 sm:p-6 lg:p-10">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
@@ -105,7 +105,7 @@ export default function TeamLeadDashboard() {
               <ClipboardList size={14} />
               Team Lead
             </span>
-            <h1 className="font-display text-3xl font-semibold text-[var(--paper)] mt-1">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--paper)] mt-1">
               Review reports
             </h1>
             {departmentName && (
@@ -219,7 +219,7 @@ export default function TeamLeadDashboard() {
               </div>
 
               {/* report data fields */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-4">
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
                     <p className="text-[10px] font-mono uppercase text-[var(--mist)]">
@@ -263,25 +263,25 @@ export default function TeamLeadDashboard() {
                     </motion.div>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => handleReview(report._id, "approved")}
                       disabled={reviewingId === report._id}
-                      className="flex-1 h-10 rounded-lg bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/30 hover:bg-[var(--success)]/25 transition-colors text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
+                      className="flex-1 min-w-[100px] h-10 rounded-lg bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/30 hover:bg-[var(--success)]/25 transition-colors text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
                     >
                       <Check size={14} /> Approve
                     </button>
                     <button
                       onClick={() => handleReview(report._id, "sent_back")}
                       disabled={reviewingId === report._id}
-                      className="flex-1 h-10 rounded-lg bg-[#60A5FA]/15 text-[#60A5FA] border border-[#60A5FA]/30 hover:bg-[#60A5FA]/25 transition-colors text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
+                      className="flex-1 min-w-[100px] h-10 rounded-lg bg-[#60A5FA]/15 text-[#60A5FA] border border-[#60A5FA]/30 hover:bg-[#60A5FA]/25 transition-colors text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
                     >
                       <RotateCcw size={14} /> Send back
                     </button>
                     <button
                       onClick={() => handleReview(report._id, "rejected")}
                       disabled={reviewingId === report._id}
-                      className="flex-1 h-10 rounded-lg bg-[var(--error)]/15 text-[var(--error)] border border-[var(--error)]/30 hover:bg-[var(--error)]/25 transition-colors text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
+                      className="flex-1 min-w-[100px] h-10 rounded-lg bg-[var(--error)]/15 text-[var(--error)] border border-[var(--error)]/30 hover:bg-[var(--error)]/25 transition-colors text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
                     >
                       <X size={14} /> Reject
                     </button>

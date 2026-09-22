@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { UserPlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import BackButton from "../components/BackButton";
+
 export default function AddUser() {
   const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState({
@@ -19,7 +19,7 @@ export default function AddUser() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+      const res = await fetch("http://localhost:5000/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -39,7 +39,7 @@ export default function AddUser() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("https://erm-3w28.onrender.com/api/auth/register", {
+      const res = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,15 +71,14 @@ export default function AddUser() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--ink)] p-4 sm:p-6 lg:p-10">
       <div className="max-w-md mx-auto">
-        <BackButton to="/dashboard" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <UserPlus size={14} />
             Admin
           </span>
-          <h1 className="font-display text-3xl font-semibold text-[var(--paper)] mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--paper)] mt-1">
             Add a user
           </h1>
           <p className="text-[var(--mist)] text-sm mt-1">
@@ -126,7 +125,7 @@ export default function AddUser() {
               type="email"
               value={form.email}
               onChange={(e) => updateField("email", e.target.value)}
-              className="w-full bg-transparent text-var(--paper) py-2.5 px-1 outline-none border-b-2 border-[var(--panel-border)] focus:border-[var(--amber)] transition-colors"
+              className="w-full bg-transparent text-[var(--paper)] py-2.5 px-1 outline-none border-b-2 border-[var(--panel-border)] focus:border-[var(--amber)] transition-colors"
             />
           </div>
 
@@ -144,7 +143,7 @@ export default function AddUser() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
                 Role

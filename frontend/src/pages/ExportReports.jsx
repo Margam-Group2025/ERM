@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { FileSpreadsheet, Download, Loader2, AlertCircle } from "lucide-react";
-import BackButton from "../components/BackButton";
+import { FileSpreadsheet, Download, Loader2, AlertCircle, Calendar } from "lucide-react";
+
 export default function ExportReports() {
   const [departments, setDepartments] = useState([]);
   const [filters, setFilters] = useState({
@@ -15,10 +15,12 @@ export default function ExportReports() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const token = localStorage.getItem("token");
+  const startDateRef = useRef(null);
+  const endDateRef = useRef(null);
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+      const res = await fetch("http://localhost:5000/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -41,7 +43,7 @@ export default function ExportReports() {
 
     try {
       const res = await fetch(
-        `https://erm-3w28.onrender.com/api/reports/export?${params.toString()}`,
+        `http://localhost:5000/api/reports/export?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -72,15 +74,14 @@ export default function ExportReports() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--ink)] p-4 sm:p-6 lg:p-10">
       <div className="max-w-xl mx-auto">
-                <BackButton to="/dashboard" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <FileSpreadsheet size={14} />
             Admin · Export
           </span>
-          <h1 className="font-display text-3xl font-semibold text-[var(--paper)] mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--paper)] mt-1">
             Export reports
           </h1>
           <p className="text-[var(--mist)] text-sm mt-1">
@@ -107,7 +108,7 @@ export default function ExportReports() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
                 Report type
@@ -143,28 +144,42 @@ export default function ExportReports() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
                 From
               </label>
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => updateFilter("startDate", e.target.value)}
-                className="w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]"
-              />
+              <div
+                className="relative flex items-center bg-[var(--ink)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
+                onClick={() => startDateRef.current?.showPicker?.()}
+              >
+                <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
+                <input
+                  ref={startDateRef}
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => updateFilter("startDate", e.target.value)}
+                  className="w-full bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer"
+                />
+              </div>
             </div>
             <div>
               <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
                 To
               </label>
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => updateFilter("endDate", e.target.value)}
-                className="w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]"
-              />
+              <div
+                className="relative flex items-center bg-[var(--ink)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
+                onClick={() => endDateRef.current?.showPicker?.()}
+              >
+                <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
+                <input
+                  ref={endDateRef}
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => updateFilter("endDate", e.target.value)}
+                  className="w-full bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 

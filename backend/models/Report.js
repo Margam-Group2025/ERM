@@ -52,6 +52,28 @@ const reportSchema = new Schema(
     reviewedAt: {
       type: Date,
     },
+    attachment: {
+      type: new Schema(
+        {
+          url: String,
+          filename: String,
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+    editedFields: {
+      // keys (from `data`) whose value has been changed since first submission
+      type: [String],
+      default: [],
+    },
+    editedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

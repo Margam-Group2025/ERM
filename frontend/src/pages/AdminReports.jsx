@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Loader2, Inbox, Crown, Calendar } from "lucide-react";
 
-const API = import.meta.env.VITE_API_URL  || "https://erm-3w28.onrender.com";;
+const API = import.meta.env.VITE_API_URL ;
 
 const STATUS_STYLES = {
   submitted: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import BackButton from "../components/BackButton";
 import {
   Users,
   Crown,
@@ -28,10 +27,10 @@ export default function ManageUsers() {
     setLoading(true);
     try {
       const [deptRes, userRes] = await Promise.all([
-        fetch("https://erm-3w28.onrender.com/api/departments", {
+        fetch("http://localhost:5000/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("https://erm-3w28.onrender.com/api/users", {
+        fetch("http://localhost:5000/api/users", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -56,7 +55,7 @@ export default function ManageUsers() {
   const handleRoleChange = async (userId, newRole) => {
     setUpdatingId(userId);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/users/${userId}`, {
+      const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -81,15 +80,14 @@ export default function ManageUsers() {
     users.filter((u) => u.department?._id === deptId || u.department === deptId);
 
   return (
-    <div className="min-h-screen bg-[var(--ink)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--ink)] p-4 sm:p-6 lg:p-10">
       <div className="max-w-3xl mx-auto">
-        <BackButton to="/dashboard" />
         <div className="mb-8">
           <span className="font-mono text-xs tracking-widest text-[var(--amber)] uppercase flex items-center gap-2">
             <Users size={14} />
             Admin
           </span>
-          <h1 className="font-display text-3xl font-semibold text-[var(--paper)] mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--paper)] mt-1">
             Manage team
           </h1>
           <p className="text-[var(--mist)] text-sm mt-1">

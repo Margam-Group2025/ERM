@@ -40,7 +40,7 @@ export default function AdminTasks() {
 
   useEffect(() => {
     const fetchTeamLeads = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/users?role=teamlead", {
+      const res = await fetch("http://localhost:5000/api/users?role=teamlead", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -56,7 +56,7 @@ export default function AdminTasks() {
     setLoadingTasks(true);
     try {
       const res = await fetch(
-        "https://erm-3w28.onrender.com/api/tasks/team?assignedToRole=teamlead",
+        "http://localhost:5000/api/tasks/team?assignedToRole=teamlead",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -80,7 +80,7 @@ export default function AdminTasks() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("https://erm-3w28.onrender.com/api/tasks", {
+      const res = await fetch("http://localhost:5000/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -168,7 +168,7 @@ export default function AdminTasks() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
                 Priority

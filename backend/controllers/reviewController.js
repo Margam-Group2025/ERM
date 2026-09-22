@@ -21,6 +21,12 @@ const getTeamReports = async (req, res) => {
     if (req.query.reportType) filter.reportType = req.query.reportType;
     if (req.query.employee) filter.employee = req.query.employee;
 
+    if (req.query.startDate || req.query.endDate) {
+      filter.reportDate = {};
+      if (req.query.startDate) filter.reportDate.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) filter.reportDate.$lte = new Date(req.query.endDate);
+    }
+
     // let Admin/Team Lead split the list by who submitted it — an employee
     // or a team lead — instead of seeing both mixed together
     if (req.query.submitterRole) {

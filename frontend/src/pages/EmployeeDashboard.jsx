@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   FileText,
-  Save,
   Send,
   Loader2,
   CheckCircle2,
@@ -13,6 +12,8 @@ import {
   Paperclip,
   History,
 } from "lucide-react";
+
+const API = import.meta.env.VITE_API_URL;
 
 export default function EmployeeDashboard() {
   const [reportType, setReportType] = useState("daily");
@@ -76,7 +77,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     const fetchDepartmentName = async () => {
       try {
-        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch(`${API}/api/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -100,7 +101,7 @@ export default function EmployeeDashboard() {
       setSubmitStatus("idle");
       try {
         const res = await fetch(
-          `https://erm-3w28.onrender.com/api/templates/active?department=${department}&reportType=${reportType}&role=${userRole}`,
+          `${API}/api/templates/active?department=${department}&reportType=${reportType}&role=${userRole}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -133,7 +134,7 @@ export default function EmployeeDashboard() {
     try {
       const uploadData = new FormData();
       uploadData.append("file", file);
-      const res = await fetch("https://erm-3w28.onrender.com/api/uploads", {
+      const res = await fetch(`${API}/api/uploads`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: uploadData,
@@ -153,7 +154,7 @@ export default function EmployeeDashboard() {
     setSubmitStatus("saving");
     setErrorMsg("");
     try {
-      const res = await fetch("https://erm-3w28.onrender.com/api/reports", {
+      const res = await fetch(`${API}/api/reports`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -178,7 +179,7 @@ export default function EmployeeDashboard() {
       if (attachment) {
         const formData = new FormData();
         formData.append("file", attachment);
-        await fetch(`https://erm-3w28.onrender.com/api/reports/${data._id}/attachment`, {
+        await fetch(`${API}/api/reports/${data._id}/attachment`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -187,6 +188,17 @@ export default function EmployeeDashboard() {
       }
 
       setSubmitStatus("success");
+
+      // clear the form so the next report starts fresh — rebuild empty
+      // values per field type rather than just emptying the object
+      if (template?.fields) {
+        const cleared = {};
+        template.fields.forEach((f) => (cleared[f.key] = f.type === "checkbox" ? false : ""));
+        setFormData(cleared);
+      } else {
+        setFormData({});
+      }
+      setAttachment(null);
     } catch (err) {
       console.error(err);
       setSubmitStatus("error");
@@ -345,9 +357,7 @@ export default function EmployeeDashboard() {
             <ListChecks size={16} />
             My tasks
           </Link>
-           <Link to="/my-reports" 
-           className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium" >
-           <History size={16} /> My reports </Link> 
+          <Link to="/my-reports" className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium" > <History size={16} /> My reports </Link>
         </div>
 
         {/* report type tabs */}
@@ -437,32 +447,7 @@ export default function EmployeeDashboard() {
                   Report saved successfully.
                 </div>
               )}
-
-              {/* <div>
-                <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
-                  Attach photo/file (optional)
-                </label>
-                <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-[var(--panel-border)] text-[var(--mist)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors cursor-pointer text-sm">
-                  <Paperclip size={16} />
-                  {attachment ? attachment.name : "Choose a photo or PDF (max 5MB)"}
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp,.pdf"
-                    onChange={(e) => setAttachment(e.target.files[0] || null)}
-                    className="hidden"
-                  />
-                </label>
-              </div> */}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => handleSubmit("draft")}
-                  disabled={submitStatus === "saving"}
-                  className="flex-1 h-11 rounded-xl border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--paper)] hover:border-[var(--mist)] transition-colors duration-200 font-medium disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  <Save size={16} />
-                  Save draft
-                </button>
+              <div className="flex  pt-1">
                 <button
                   onClick={() => handleSubmit("submitted")}
                   disabled={submitStatus === "saving"}
