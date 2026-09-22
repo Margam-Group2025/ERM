@@ -38,7 +38,7 @@ export default function TeamLeadDashboard() {
     const fetchDepartmentName = async () => {
       try {
         const departmentId = localStorage.getItem("department");
-        const res = await fetch("http://localhost:5000/api/departments", {
+        const res = await fetch("https://erm-rust.vercel.app/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -57,7 +57,7 @@ export default function TeamLeadDashboard() {
     setLoading(true);
     try {
       const query = statusFilter ? `?status=${statusFilter}` : "";
-      const res = await fetch(`http://localhost:5000/api/reports/team/all${query}`, {
+      const res = await fetch(`https://erm-rust.vercel.app/api/reports/team/all${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -76,7 +76,7 @@ export default function TeamLeadDashboard() {
   const handleReview = async (id, decision) => {
     setReviewingId(id);
     try {
-      const res = await fetch(`http://localhost:5000/api/reports/${id}/review`, {
+      const res = await fetch(`https://erm-rust.vercel.app/api/reports/${id}/review`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

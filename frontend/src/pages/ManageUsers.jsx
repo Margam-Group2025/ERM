@@ -27,10 +27,10 @@ export default function ManageUsers() {
     setLoading(true);
     try {
       const [deptRes, userRes] = await Promise.all([
-        fetch("http://localhost:5000/api/departments", {
+        fetch("https://erm-rust.vercel.app/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:5000/api/users", {
+        fetch("https://erm-rust.vercel.app/api/users", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -55,7 +55,7 @@ export default function ManageUsers() {
   const handleRoleChange = async (userId, newRole) => {
     setUpdatingId(userId);
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const res = await fetch(`https://erm-rust.vercel.app/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

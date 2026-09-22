@@ -20,7 +20,7 @@ export default function ExportReports() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("http://localhost:5000/api/departments", {
+      const res = await fetch("https://erm-rust.vercel.app/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -43,7 +43,7 @@ export default function ExportReports() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/reports/export?${params.toString()}`,
+        `https://erm-rust.vercel.app/api/reports/export?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

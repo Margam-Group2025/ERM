@@ -19,7 +19,7 @@ export default function AddUser() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("http://localhost:5000/api/departments", {
+      const res = await fetch("https://erm-rust.vercel.app/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -39,7 +39,7 @@ export default function AddUser() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch("https://erm-rust.vercel.app/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
