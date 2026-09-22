@@ -30,7 +30,7 @@ export default function TeamExport() {
 
     try {
       const res = await fetch(
-        `https://erm-rust.vercel.app/api/reports/export?${params.toString()}`,
+        `https://erm-3w28.onrender.com/api/reports/export?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

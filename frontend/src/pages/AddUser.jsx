@@ -19,7 +19,7 @@ export default function AddUser() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-rust.vercel.app/api/departments", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -39,7 +39,7 @@ export default function AddUser() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("https://erm-rust.vercel.app/api/auth/register", {
+      const res = await fetch("https://erm-3w28.onrender.com/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
