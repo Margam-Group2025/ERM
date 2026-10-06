@@ -1,5 +1,6 @@
 const Task = require("../models/Task");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 // @route  POST /api/tasks
 // @desc   Team Lead assigns a task to an employee in their department, OR
@@ -27,6 +28,14 @@ const createTask = async (req, res) => {
       department: assignee.department, // department of whoever is RECEIVING the task
       priority,
       deadline,
+    });
+
+    // notify the person the task was assigned to
+    await Notification.create({
+      recipient: assignedTo,
+      message: `New task assigned: "${title}"`,
+      type: "task_assigned",
+      relatedId: task._id,
     });
 
     res.status(201).json(task);

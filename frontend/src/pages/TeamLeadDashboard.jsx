@@ -7,6 +7,8 @@ import {
   FileSpreadsheet,
   FileText,
   ListChecks,
+  History,
+  Lock,
   Check,
   X,
   RotateCcw,
@@ -122,6 +124,20 @@ export default function TeamLeadDashboard() {
             >
               <FileText size={16} />
               File report
+            </Link>
+            <Link
+              to="/teamlead/edit-requests"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium"
+            >
+              <Lock size={16} />
+              Edit requests
+            </Link>
+            <Link
+              to="/teamlead/my-reports"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium"
+            >
+              <History size={16} />
+              My reports
             </Link>
             <Link
               to="/teamlead/export"

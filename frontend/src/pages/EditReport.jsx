@@ -34,6 +34,12 @@ export default function EditReport() {
           setLoadError(data.message || "Could not load this report");
           return;
         }
+        if (data.editRequest?.status !== "approved") {
+          setLoadError(
+            "You don't have edit access to this report yet. Request edit access from your report history page first."
+          );
+          return;
+        }
         setReport(data);
         setFormData(data.data || {});
       } catch (err) {

@@ -37,6 +37,7 @@ app.use("/api/templates", require("./routes/templateRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/uploads", require("./routes/uploadRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

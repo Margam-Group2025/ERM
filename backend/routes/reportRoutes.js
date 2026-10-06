@@ -6,6 +6,9 @@ const {
   getReportById,
   updateReport,
   uploadAttachment,
+  requestEdit,
+  respondEditRequest,
+  getPendingEditRequests,
 } = require("../controllers/reportController");
 const { getTeamReports, reviewReport } = require("../controllers/reviewController");
 const { exportReportsToExcel } = require("../controllers/exportController");
@@ -26,6 +29,17 @@ router.get("/export", protect, exportReportsToExcel);
 // Team Lead / Admin: view team/department reports and review them
 router.get("/team/all", protect, authorize("teamlead", "admin"), getTeamReports);
 router.put("/:id/review", protect, authorize("teamlead", "admin"), reviewReport);
+
+// Edit-permission workflow — MUST come before the generic "/:id" routes
+// below, otherwise Express would treat "edit-requests" as an :id value.
+router.get(
+  "/edit-requests/pending",
+  protect,
+  authorize("teamlead", "admin"),
+  getPendingEditRequests
+);
+router.post("/:id/request-edit", protect, requestEdit);
+router.put("/:id/edit-request", protect, authorize("teamlead", "admin"), respondEditRequest);
 
 router.get("/:id", protect, getReportById);
 router.put("/:id", protect, updateReport);

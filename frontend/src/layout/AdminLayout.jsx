@@ -8,6 +8,7 @@ import {
   Users,
   Eye,
   ClipboardPlus,
+  Lock,
   LogOut,
   ShieldCheck,
   Menu,
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { to: "/admin/users", label: "Add User", icon: UserPlus },
   { to: "/admin/team", label: "Manage Team", icon: Users },
   { to: "/admin/tasks", label: "Assign Tasks", icon: ClipboardPlus },
+  { to: "/admin/edit-requests", label: "Edit Requests", icon: Lock },
   { to: "/admin/export", label: "Export Reports", icon: FileSpreadsheet },
 ];
 

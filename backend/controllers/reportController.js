@@ -1,5 +1,7 @@
 const Report = require("../models/Report");
 const ReportTemplate = require("../models/ReportTemplate");
+const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 // @route  POST /api/reports
 // @desc   Employee (or Team Lead) submits or drafts a report.
@@ -91,7 +93,7 @@ const getMyReports = async (req, res) => {
 const getReportById = async (req, res) => {
   try {
     const report = await Report.findById(req.params.id)
-      .populate("employee", "name employeeId")
+      .populate("employee", "name employeeId role")
       .populate("department", "name")
       .populate("reportTemplate");
 
@@ -112,10 +114,9 @@ const getReportById = async (req, res) => {
 };
 
 // @route  PUT /api/reports/:id
-// @desc   Employee or Team Lead edits their own report — allowed on any
-// status EXCEPT approved/rejected, and ONLY on the same calendar day it
-// was first submitted. Tracks which fields actually changed so the UI can
-// show "(edited)" next to them.
+// @desc   Employee or Team Lead edits their own report — ONLY allowed once
+// their editRequest has been explicitly approved by their Team Lead/Admin.
+// The approval is single-use: it's consumed as soon as this save succeeds.
 const updateReport = async (req, res) => {
   try {
     const { data, status } = req.body;
@@ -129,19 +130,10 @@ const updateReport = async (req, res) => {
       return res.status(403).json({ message: "You can only edit your own reports" });
     }
 
-    if (["approved", "rejected"].includes(report.status)) {
-      return res
-        .status(400)
-        .json({ message: "This report has already been reviewed and can no longer be edited" });
-    }
-
-    // editing is only allowed on the same day the report was submitted
-    const submittedDay = report.createdAt.toISOString().split("T")[0];
-    const today = new Date().toISOString().split("T")[0];
-    if (submittedDay !== today) {
-      return res
-        .status(400)
-        .json({ message: "This report can only be edited on the day it was submitted" });
+    if (report.editRequest?.status !== "approved") {
+      return res.status(403).json({
+        message: "You need approval before editing this report. Please request edit access first.",
+      });
     }
 
     if (data) {
@@ -160,6 +152,9 @@ const updateReport = async (req, res) => {
 
     if (status === "draft" || status === "submitted") report.status = status;
 
+    // the approval is used up — a future edit needs a fresh request
+    report.editRequest = { status: "none" };
+
     await report.save();
     res.status(200).json(report);
   } catch (err) {
@@ -167,7 +162,152 @@ const updateReport = async (req, res) => {
   }
 };
 
-module.exports = { createReport, getMyReports, getReportById, updateReport, uploadAttachment };
+// @route  POST /api/reports/:id/request-edit
+// @desc   Report owner asks permission to edit. Employees' requests go to
+// their department's Team Lead; a Team Lead's own requests go to Admin.
+const requestEdit = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    if (report.employee.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You can only request to edit your own reports" });
+    }
+    if (["approved", "rejected"].includes(report.status)) {
+      return res
+        .status(400)
+        .json({ message: "This report has already been reviewed and can no longer be edited" });
+    }
+
+    const submittedDay = report.createdAt.toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+    if (submittedDay !== today) {
+      return res
+        .status(400)
+        .json({ message: "This report can only be edited on the day it was submitted" });
+    }
+
+    if (report.editRequest?.status === "pending") {
+      return res.status(400).json({ message: "An edit request is already pending for this report" });
+    }
+
+    report.editRequest = { status: "pending", requestedAt: new Date() };
+    await report.save();
+
+    // figure out who approves it
+    let approvers = [];
+    if (req.user.role === "employee") {
+      approvers = await User.find({ role: "teamlead", department: req.user.department });
+    } else if (req.user.role === "teamlead") {
+      approvers = await User.find({ role: "admin" });
+    }
+
+    await Promise.all(
+      approvers.map((a) =>
+        Notification.create({
+          recipient: a._id,
+          message: `${req.user.name} requested permission to edit a ${report.reportType} report`,
+          type: "edit_request",
+          relatedId: report._id,
+        })
+      )
+    );
+
+    res.status(200).json(report);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @route  PUT /api/reports/:id/edit-request
+// @desc   Team Lead approves/denies their employee's request; Admin
+// approves/denies a Team Lead's own request.
+const respondEditRequest = async (req, res) => {
+  try {
+    const { decision } = req.body; // "approved" | "denied"
+    if (!["approved", "denied"].includes(decision)) {
+      return res.status(400).json({ message: "decision must be approved or denied" });
+    }
+
+    const report = await Report.findById(req.params.id).populate("employee", "name role department");
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    if (req.user.role === "teamlead") {
+      const sameDept = report.department.toString() === req.user.department.toString();
+      if (report.employee.role !== "employee" || !sameDept) {
+        return res.status(403).json({ message: "You can only respond to your own team's requests" });
+      }
+    } else if (req.user.role === "admin") {
+      if (report.employee.role !== "teamlead") {
+        return res.status(403).json({ message: "You can only respond to Team Leads' requests" });
+      }
+    } else {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    if (report.editRequest?.status !== "pending") {
+      return res.status(400).json({ message: "No pending edit request on this report" });
+    }
+
+    report.editRequest.status = decision;
+    report.editRequest.respondedAt = new Date();
+    report.editRequest.respondedBy = req.user._id;
+    await report.save();
+
+    await Notification.create({
+      recipient: report.employee._id,
+      message:
+        decision === "approved"
+          ? "Your edit request was approved — you can now edit your report"
+          : "Your edit request was denied",
+      type: decision === "approved" ? "edit_approved" : "edit_denied",
+      relatedId: report._id,
+    });
+
+    res.status(200).json(report);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @route  GET /api/reports/edit-requests/pending
+// @desc   Team Lead sees pending requests from their own department's
+// employees; Admin sees pending requests from Team Leads.
+const getPendingEditRequests = async (req, res) => {
+  try {
+    const filter = { "editRequest.status": "pending" };
+    if (req.user.role === "teamlead") filter.department = req.user.department;
+
+    let reports = await Report.find(filter)
+      .populate("employee", "name employeeId role")
+      .populate("department", "name")
+      .sort({ "editRequest.requestedAt": -1 });
+
+    if (req.user.role === "teamlead") {
+      reports = reports.filter((r) => r.employee.role === "employee");
+    } else if (req.user.role === "admin") {
+      reports = reports.filter((r) => r.employee.role === "teamlead");
+    }
+
+    res.status(200).json(reports);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = {
+  createReport,
+  getMyReports,
+  getReportById,
+  updateReport,
+  uploadAttachment,
+  requestEdit,
+  respondEditRequest,
+  getPendingEditRequests,
+};
 
 // @route  POST /api/reports/:id/attachment
 // @desc   Attach a photo/file to a report the employee owns (multipart/form-data, field name "file")

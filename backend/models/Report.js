@@ -62,6 +62,24 @@ const reportSchema = new Schema(
       ),
       default: undefined,
     },
+    // employee needs their Team Lead's approval to edit; Team Lead needs
+    // Admin's approval. "approved" is single-use — consumed on the next save.
+    editRequest: {
+      type: new Schema(
+        {
+          status: {
+            type: String,
+            enum: ["none", "pending", "approved", "denied"],
+            default: "none",
+          },
+          requestedAt: Date,
+          respondedAt: Date,
+          respondedBy: { type: Schema.Types.ObjectId, ref: "User" },
+        },
+        { _id: false }
+      ),
+      default: () => ({ status: "none" }),
+    },
     isEdited: {
       type: Boolean,
       default: false,

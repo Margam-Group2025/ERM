@@ -16,6 +16,7 @@ import AdminReports from "./pages/AdminReports";
 import AdminTasks from "./pages/AdminTasks";
 import MyReports from "./pages/MyReports"; 
 import EditReport from "./pages/EditReport"
+import EditRequests from "./pages/EditRequests";
 function App() {
   return (
     <BrowserRouter>
@@ -75,6 +76,12 @@ function App() {
             <ProtectedRoute allowedRoles={["teamlead"]}> 
             <MyTasks />
            </ProtectedRoute> } />
+
+        <Route 
+        path="/teamlead/edit-requests" 
+        element={ <ProtectedRoute allowedRoles={["teamlead"]}>
+           <EditRequests />
+            </ProtectedRoute> } />   
 
         {/* ================= EMPLOYEE ================= */}
 
@@ -143,6 +150,10 @@ function App() {
              element={<AdminTasks />}
             /> 
         </Route>
+        <Route
+           path="edit-requests" 
+           element={<EditRequests />}
+           /> 
          
       </Routes>
     </BrowserRouter>

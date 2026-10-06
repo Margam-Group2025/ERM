@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell"
 import {
   FileText,
   Send,
@@ -358,6 +359,7 @@ export default function EmployeeDashboard() {
             My tasks
           </Link>
           <Link to="/my-reports" className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--panel)] border border-[var(--panel-border)] text-[var(--mist)] hover:text-[var(--amber)] hover:border-[var(--amber)] transition-colors text-sm font-medium" > <History size={16} /> My reports </Link>
+          <NotificationBell />
         </div>
 
         {/* report type tabs */}

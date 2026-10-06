@@ -11,6 +11,10 @@ import {
   AlertCircle,
   ChevronDown,
   Pencil,
+  Lock,
+  Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL;
@@ -30,6 +34,7 @@ export default function MyReports() {
   const [range, setRange] = useState({ startDate: "", endDate: "" });
   const [exportStatus, setExportStatus] = useState("idle"); // idle | downloading | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [requestingId, setRequestingId] = useState(null); // which report's edit-request is in flight
 
   const startRef = useRef(null);
   const endRef = useRef(null);
@@ -38,12 +43,30 @@ export default function MyReports() {
   const role = localStorage.getItem("role");
   const backTo = role === "teamlead" ? "/teamlead" : "/dashboard";
 
-  // matches the backend's same-day + not-yet-reviewed rule, so the Edit
-  // button only appears when editing would actually succeed
-  const isEditable = (report) => {
+  // matches the backend's same-day + not-yet-reviewed rule — whether
+  // requesting edit access is even allowed to begin with
+  const isWithinEditWindow = (report) => {
     const submittedDay = new Date(report.createdAt).toISOString().split("T")[0];
     const today = new Date().toISOString().split("T")[0];
     return submittedDay === today && !["approved", "rejected"].includes(report.status);
+  };
+
+  const handleRequestEdit = async (reportId) => {
+    setRequestingId(reportId);
+    try {
+      const res = await fetch(`${API}/api/reports/${reportId}/request-edit`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const updated = await res.json();
+      if (res.ok) {
+        setReports((prev) => prev.map((r) => (r._id === reportId ? updated : r)));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRequestingId(null);
+    }
   };
 
   const fetchReports = async () => {
@@ -139,7 +162,7 @@ export default function MyReports() {
             Download my reports
           </p>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block font-mono text-[10px] uppercase tracking-wider text-[var(--mist)] mb-2">
                 From
@@ -273,19 +296,53 @@ export default function MyReports() {
                   >
                     {report.status.replace("_", " ")}
                   </span>
-                  {isEditable(report) && (
-                    <Link
-                      to={`/reports/${report._id}/edit`}
-                      className="flex items-center gap-1 text-xs font-medium text-[var(--amber)] hover:text-[var(--amber-dim)] transition-colors"
-                    >
-                      <Pencil size={12} />
-                      Edit
-                    </Link>
+                  {isWithinEditWindow(report) && (
+                    <>
+                      {(!report.editRequest || report.editRequest.status === "none") && (
+                        <button
+                          onClick={() => handleRequestEdit(report._id)}
+                          disabled={requestingId === report._id}
+                          className="flex items-center gap-1 text-xs font-medium text-[var(--amber)] hover:text-[var(--amber-dim)] transition-colors disabled:opacity-60"
+                        >
+                          {requestingId === report._id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Lock size={12} />
+                          )}
+                          Request edit
+                        </button>
+                      )}
+                      {report.editRequest?.status === "pending" && (
+                        <span className="flex items-center gap-1 text-xs font-medium text-[var(--mist)]">
+                          <Clock size={12} />
+                          Pending approval
+                        </span>
+                      )}
+                      {report.editRequest?.status === "approved" && (
+                        <Link
+                          to={`/reports/${report._id}/edit`}
+                          className="flex items-center gap-1 text-xs font-medium text-[var(--success)] hover:opacity-80 transition-opacity"
+                        >
+                          <CheckCircle2 size={12} />
+                          Edit now
+                        </Link>
+                      )}
+                      {report.editRequest?.status === "denied" && (
+                        <button
+                          onClick={() => handleRequestEdit(report._id)}
+                          disabled={requestingId === report._id}
+                          className="flex items-center gap-1 text-xs font-medium text-[var(--error)] hover:opacity-80 transition-opacity disabled:opacity-60"
+                        >
+                          <XCircle size={12} />
+                          Denied — request again
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4">
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
                     <p className="text-[10px] font-mono uppercase text-[var(--mist)] flex items-center gap-1">
