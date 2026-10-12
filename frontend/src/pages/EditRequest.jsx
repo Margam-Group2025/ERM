@@ -12,6 +12,12 @@ import {
 
 const API = import.meta.env.VITE_API_URL;
 
+// the heading for a field = the label from the template THIS report was
+// filled with (falls back to a tidied-up key for very old reports)
+const labelFor = (report, key) =>
+  report.reportTemplate?.fields?.find((f) => f.key === key)?.label ||
+  key.replace(/_/g, " ");
+
 export default function EditRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +147,7 @@ export default function EditRequests() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4 mb-4">
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
-                    <p className="text-[10px] font-mono uppercase text-[var(--mist)]">{key}</p>
+                    <p className="text-[10px] font-mono uppercase text-[var(--mist)]">{labelFor(report, key)}</p>
                     <p className="text-sm text-[var(--paper)]">{String(value) || "—"}</p>
                   </div>
                 ))}

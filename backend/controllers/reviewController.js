@@ -37,6 +37,7 @@ const getTeamReports = async (req, res) => {
     const reports = await Report.find(filter)
       .populate("employee", "name employeeId role")
       .populate("department", "name")
+      .populate("reportTemplate", "fields") // labels for the headings
       .sort({ createdAt: -1 }); // newest submitted report first
 
     res.status(200).json(reports);

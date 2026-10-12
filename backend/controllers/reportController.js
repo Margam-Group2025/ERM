@@ -79,7 +79,9 @@ const getMyReports = async (req, res) => {
     // ?limit=2 gives the "last 2 reports" quick view; omit it for full history
     const limit = parseInt(req.query.limit, 10);
 
-    const query = Report.find(filter).sort({ createdAt: -1 }); // newest submitted first
+    const query = Report.find(filter)
+      .populate("reportTemplate", "fields") // labels for the headings
+      .sort({ createdAt: -1 }); // newest submitted first
     if (limit > 0) query.limit(limit);
 
     const reports = await query;
@@ -284,6 +286,7 @@ const getPendingEditRequests = async (req, res) => {
     let reports = await Report.find(filter)
       .populate("employee", "name employeeId role")
       .populate("department", "name")
+      .populate("reportTemplate", "fields")
       .sort({ "editRequest.requestedAt": -1 });
 
     if (req.user.role === "teamlead") {

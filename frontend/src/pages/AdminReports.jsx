@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Loader2, Inbox, Crown, Calendar } from "lucide-react";
 
-const API = import.meta.env.VITE_API_URL ;
+const API = import.meta.env.VITE_API_URL;
+
+// the heading for a field = the label from the template THIS report was
+// filled with (falls back to a tidied-up key for very old reports)
+const labelFor = (report, key) =>
+  report.reportTemplate?.fields?.find((f) => f.key === key)?.label ||
+  key.replace(/_/g, " ");
 
 const STATUS_STYLES = {
   submitted: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",
@@ -105,7 +111,7 @@ export default function AdminReports() {
         </div>
 
         {/* who submitted — keeps employee reports and team lead reports separate */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           {[
             { key: "", label: "All" },
             { key: "employee", label: "Employee reports" },
@@ -296,11 +302,11 @@ export default function AdminReports() {
               </div>
 
               {/* full report data — the actual preview */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--panel-border)] pt-4">
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
                     <p className="text-[10px] font-mono uppercase text-[var(--mist)]">
-                      {key}
+                      {labelFor(report, key)}
                       {report.editedFields?.includes(key) && (
                         <span className="text-[#60A5FA] normal-case ml-1">(edited)</span>
                       )}

@@ -17,6 +17,12 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+// the heading for a field = the label from the template THIS report was
+// filled with (falls back to a tidied-up key for very old reports)
+const labelFor = (report, key) =>
+  report.reportTemplate?.fields?.find((f) => f.key === key)?.label ||
+  key.replace(/_/g, " ");
+
 const STATUS_STYLES = {
   submitted: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",
   approved: "text-[var(--success)] border-[var(--success)]/40 bg-[var(--success)]/10",
@@ -239,7 +245,7 @@ export default function TeamLeadDashboard() {
                 {Object.entries(report.data || {}).map(([key, value]) => (
                   <div key={key}>
                     <p className="text-[10px] font-mono uppercase text-[var(--mist)]">
-                      {key}
+                      {labelFor(report, key)}
                       {report.editedFields?.includes(key) && (
                         <span className="text-[#60A5FA] normal-case ml-1">(edited)</span>
                       )}
