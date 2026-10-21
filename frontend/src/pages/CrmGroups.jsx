@@ -14,10 +14,7 @@ import {
   UserPlus,
 } from "lucide-react";
 
-const API = (
-  import.meta.env.VITE_API_URL ||
-  "https://erm-3w28.onrender.com"
-).replace(/\/+$/, "");
+const API = import.meta.env.VITE_API_URL;
 
 const idOf = (v) => (v && typeof v === "object" ? v._id : v);
 
