@@ -25,6 +25,14 @@ const labelFor = (report, key) =>
   report.reportTemplate?.fields?.find((f) => f.key === key)?.label ||
   key.replace(/_/g, " ");
 
+// Admin's final-review state (departments with groups only)
+const ADMIN_REVIEW = {
+  pending: { label: "Awaiting Admin", cls: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10" },
+  approved: { label: "Admin approved", cls: "text-[var(--success)] border-[var(--success)]/40 bg-[var(--success)]/10" },
+  rejected: { label: "Admin rejected", cls: "text-[var(--error)] border-[var(--error)]/40 bg-[var(--error)]/10" },
+  returned: { label: "Returned by Admin", cls: "text-[#60A5FA] border-[#60A5FA]/40 bg-[#60A5FA]/10" },
+};
+
 const STATUS_STYLES = {
   submitted: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",
   approved: "text-[var(--success)] border-[var(--success)]/40 bg-[var(--success)]/10",
@@ -52,9 +60,13 @@ export default function MyReports() {
   // matches the backend's same-day + not-yet-reviewed rule — whether
   // requesting edit access is even allowed to begin with
   const isWithinEditWindow = (report) => {
+    if (["approved", "rejected"].includes(report.status)) return false;
+    // a report sent back for correction stays open for editing; any other
+    // report can only be edited on the day it was submitted
+    if (report.status === "sent_back") return true;
     const submittedDay = new Date(report.createdAt).toISOString().split("T")[0];
     const today = new Date().toISOString().split("T")[0];
-    return submittedDay === today && !["approved", "rejected"].includes(report.status);
+    return submittedDay === today;
   };
 
   const handleRequestEdit = async (reportId) => {
@@ -302,6 +314,13 @@ export default function MyReports() {
                   >
                     {report.status.replace("_", " ")}
                   </span>
+                  {ADMIN_REVIEW[report.adminReview?.status] && (
+                    <span
+                      className={`text-[10px] font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 ${ADMIN_REVIEW[report.adminReview.status].cls}`}
+                    >
+                      {ADMIN_REVIEW[report.adminReview.status].label}
+                    </span>
+                  )}
                   {isWithinEditWindow(report) && (
                     <>
                       {(!report.editRequest || report.editRequest.status === "none") && (

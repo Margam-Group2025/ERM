@@ -20,6 +20,7 @@ export default function EditReport() {
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [resubmitted, setResubmitted] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | success | error
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -59,6 +60,7 @@ export default function EditReport() {
   const handleSave = async () => {
     setSaveStatus("saving");
     setErrorMsg("");
+    const wasReturned = report?.status === "sent_back";
     try {
       const res = await fetch(`${API}/api/reports/${id}`, {
         method: "PUT",
@@ -75,6 +77,7 @@ export default function EditReport() {
         return;
       }
       setSaveStatus("success");
+      setResubmitted(wasReturned);
       setReport(result);
     } catch (err) {
       console.error(err);
@@ -232,7 +235,9 @@ export default function EditReport() {
           {saveStatus === "success" && (
             <div className="flex items-center gap-2 text-[var(--success)] text-sm font-medium">
               <CheckCircle2 size={16} />
-              Changes saved.
+              {resubmitted
+                ? "Corrected report resubmitted for review."
+                : "Changes saved."}
             </div>
           )}
 

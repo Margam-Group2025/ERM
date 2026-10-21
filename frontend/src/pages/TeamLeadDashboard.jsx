@@ -17,6 +17,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+const API = import.meta.env.VITE_API_URL;
+
 // the heading for a field = the label from the template THIS report was
 // filled with (falls back to a tidied-up key for very old reports)
 const labelFor = (report, key) =>
@@ -41,18 +43,21 @@ export default function TeamLeadDashboard() {
 
   const token = localStorage.getItem("token");
   const [departmentName, setDepartmentName] = useState("");
+  const [deptHasGroups, setDeptHasGroups] = useState(false);
+  const [groupName, setGroupName] = useState("");
 
   useEffect(() => {
     const fetchDepartmentName = async () => {
       try {
         const departmentId = localStorage.getItem("department");
-        const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+        const res = await fetch(`${API}/api/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (res.ok) {
           const match = data.find((d) => d._id === departmentId);
           setDepartmentName(match ? match.name : "");
+          setDeptHasGroups(!!match?.hasGroups);
         }
       } catch {
         setDepartmentName("");
@@ -61,11 +66,33 @@ export default function TeamLeadDashboard() {
     fetchDepartmentName();
   }, []);
 
+  // in a department with groups: which group does this Team Lead lead?
+  useEffect(() => {
+    if (!deptHasGroups) return;
+    const loadGroup = async () => {
+      try {
+        const myId = JSON.parse(atob(token.split(".")[1])).id;
+        const res = await fetch(
+          `${API}/api/teams?department=${localStorage.getItem("department")}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const teams = await res.json();
+        if (res.ok) {
+          const mine = teams.find((t) => t.teamLead?._id === myId);
+          setGroupName(mine ? mine.name : "");
+        }
+      } catch {
+        setGroupName("");
+      }
+    };
+    loadGroup();
+  }, [deptHasGroups]);
+
   const fetchReports = async () => {
     setLoading(true);
     try {
       const query = statusFilter ? `?status=${statusFilter}` : "";
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/team/all${query}`, {
+      const res = await fetch(`${API}/api/reports/team/all${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -84,7 +111,7 @@ export default function TeamLeadDashboard() {
   const handleReview = async (id, decision) => {
     setReviewingId(id);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/reports/${id}/review`, {
+      const res = await fetch(`${API}/api/reports/${id}/review`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -118,7 +145,9 @@ export default function TeamLeadDashboard() {
             </h1>
             {departmentName && (
               <span className="inline-block mt-2 text-xs font-mono text-[var(--mist)] border border-[var(--panel-border)] rounded-full px-3 py-1">
-                {departmentName} · Team Lead
+                {departmentName}
+                {groupName && ` · ${groupName}`} · Team Lead
+                {deptHasGroups && !groupName && " · no group assigned yet"}
               </span>
             )}
           </div>
@@ -232,6 +261,12 @@ export default function TeamLeadDashboard() {
                   <p className="text-[var(--mist)] text-xs font-mono mt-0.5">
                     {report.reportType} · {new Date(report.reportDate).toLocaleDateString()}
                   </p>
+                  {report.adminReview?.status && report.adminReview.status !== "none" && (
+                    <p className="text-[10px] font-mono uppercase text-[var(--amber)] mt-1">
+                      Admin review: {report.adminReview.status}
+                      {report.adminReview.comment && ` — "${report.adminReview.comment}"`}
+                    </p>
+                  )}
                 </div>
                 <span
                   className={`text-[10px] font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 shrink-0 ${STATUS_STYLES[report.status]}`}

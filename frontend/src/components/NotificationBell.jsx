@@ -18,6 +18,11 @@ function getLink(type, role) {
     case "edit_approved":
     case "edit_denied":
       return role === "teamlead" ? "/teamlead/my-reports" : "/my-reports";
+    case "admin_review_pending":
+      return "/admin/final-review";
+    case "admin_review_decision":
+      // employees see the outcome on their report, Team Leaders on their review list
+      return role === "teamlead" ? "/teamlead" : "/my-reports";
     case "report_reviewed":
     case "report_sent_back":
       return role === "teamlead" ? "/teamlead/my-reports" : "/my-reports";

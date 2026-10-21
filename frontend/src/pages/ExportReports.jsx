@@ -2,31 +2,43 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FileSpreadsheet, Download, Loader2, AlertCircle, Calendar } from "lucide-react";
 
+const API = import.meta.env.VITE_API_URL;
+
+const selectClass =
+  "w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]";
+const labelClass =
+  "block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2";
+
 export default function ExportReports() {
   const [departments, setDepartments] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [filters, setFilters] = useState({
     department: "",
+    team: "",
     reportType: "",
     status: "",
+    adminStatus: "",
     startDate: "",
     endDate: "",
   });
   const [status, setStatus] = useState("idle"); // idle | downloading | error
   const [errorMsg, setErrorMsg] = useState("");
 
-  const token = localStorage.getItem("token");
   const startDateRef = useRef(null);
   const endDateRef = useRef(null);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) setDepartments(data);
+    const load = async () => {
+      const [dRes, tRes] = await Promise.all([
+        fetch(`${API}/api/departments`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/api/teams`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const [d, t] = await Promise.all([dRes.json(), tRes.json()]);
+      if (dRes.ok) setDepartments(d);
+      if (tRes.ok) setTeams(t);
     };
-    fetchDepartments();
+    load();
   }, []);
 
   const updateFilter = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
@@ -35,17 +47,16 @@ export default function ExportReports() {
     setStatus("downloading");
     setErrorMsg("");
 
-    // build query string from only the filters that are actually set
+    // only send the filters that are actually set
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, value);
     });
 
     try {
-      const res = await fetch(
-        `https://erm-3w28.onrender.com/api/reports/export?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await fetch(`${API}/api/reports/export?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!res.ok) {
         const data = await res.json();
@@ -85,38 +96,58 @@ export default function ExportReports() {
             Export reports
           </h1>
           <p className="text-[var(--mist)] text-sm mt-1">
-            Filter and download reports as an Excel spreadsheet.
+            Filter and download reports as an Excel spreadsheet. Leave Group on "All groups" for a
+            combined report.
           </p>
         </div>
 
-        <div className="bg-[var(--panel)] border border-[var(--panel-border)] rounded-2xl p-8 space-y-5">
-          <div>
-            <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
-              Department
-            </label>
-            <select
-              value={filters.department}
-              onChange={(e) => updateFilter("department", e.target.value)}
-              className="w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]"
-            >
-              <option value="">All departments</option>
-              {departments.map((d) => (
-                <option key={d._id} value={d._id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+        <div className="bg-[var(--panel)] border border-[var(--panel-border)] rounded-2xl p-6 sm:p-8 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Department</label>
+              <select
+                value={filters.department}
+                onChange={(e) => updateFilter("department", e.target.value)}
+                className={selectClass}
+              >
+                <option value="">All departments</option>
+                {departments.map((d) => (
+                  <option key={d._id} value={d._id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelClass}>Group</label>
+              <select
+                value={filters.team}
+                onChange={(e) => updateFilter("team", e.target.value)}
+                className={selectClass}
+              >
+                <option value="">All groups (combined)</option>
+                {teams
+                  .filter(
+                    (t) =>
+                      !filters.department || (t.department?._id || t.department) === filters.department
+                  )
+                  .map((t) => (
+                    <option key={t._id} value={t._id}>
+                      {t.department?.name} — {t.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
-                Report type
-              </label>
+              <label className={labelClass}>Report type</label>
               <select
                 value={filters.reportType}
                 onChange={(e) => updateFilter("reportType", e.target.value)}
-                className="w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]"
+                className={selectClass}
               >
                 <option value="">All types</option>
                 <option value="daily">Daily</option>
@@ -126,13 +157,11 @@ export default function ExportReports() {
             </div>
 
             <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
-                Status
-              </label>
+              <label className={labelClass}>Team Leader status</label>
               <select
                 value={filters.status}
                 onChange={(e) => updateFilter("status", e.target.value)}
-                className="w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]"
+                className={selectClass}
               >
                 <option value="">All statuses</option>
                 <option value="submitted">Submitted</option>
@@ -144,43 +173,43 @@ export default function ExportReports() {
             </div>
           </div>
 
+          <div>
+            <label className={labelClass}>Admin final review</label>
+            <select
+              value={filters.adminStatus}
+              onChange={(e) => updateFilter("adminStatus", e.target.value)}
+              className={selectClass}
+            >
+              <option value="">Any</option>
+              <option value="pending">Awaiting Admin</option>
+              <option value="approved">Admin approved</option>
+              <option value="rejected">Admin rejected</option>
+              <option value="returned">Returned by Admin</option>
+            </select>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
-                From
-              </label>
-              <div
-                className="relative flex items-center bg-[var(--ink)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
-                onClick={() => startDateRef.current?.showPicker?.()}
-              >
-                <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
-                <input
-                  ref={startDateRef}
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => updateFilter("startDate", e.target.value)}
-                  className="w-full bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer"
-                />
+            {[
+              { label: "From", key: "startDate", ref: startDateRef },
+              { label: "To", key: "endDate", ref: endDateRef },
+            ].map(({ label, key, ref }) => (
+              <div key={key}>
+                <label className={labelClass}>{label}</label>
+                <div
+                  className="relative flex items-center bg-[var(--ink)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
+                  onClick={() => ref.current?.showPicker?.()}
+                >
+                  <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
+                  <input
+                    ref={ref}
+                    type="date"
+                    value={filters[key]}
+                    onChange={(e) => updateFilter(key, e.target.value)}
+                    className="w-full bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer"
+                  />
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
-                To
-              </label>
-              <div
-                className="relative flex items-center bg-[var(--ink)] rounded-lg border border-[var(--panel-border)] focus-within:border-[var(--amber)] transition-colors cursor-pointer"
-                onClick={() => endDateRef.current?.showPicker?.()}
-              >
-                <Calendar size={16} className="absolute left-3 text-[var(--mist)] pointer-events-none" />
-                <input
-                  ref={endDateRef}
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => updateFilter("endDate", e.target.value)}
-                  className="w-full bg-transparent text-[var(--paper)] rounded-lg pl-10 pr-3 py-2.5 outline-none cursor-pointer"
-                />
-              </div>
-            </div>
+            ))}
           </div>
 
           {status === "error" && (

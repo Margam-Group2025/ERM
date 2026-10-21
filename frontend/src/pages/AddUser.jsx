@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+
+const API = import.meta.env.VITE_API_URL;
 import { UserPlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function AddUser() {
@@ -11,7 +13,9 @@ export default function AddUser() {
     password: "",
     role: "employee",
     department: "",
+    team: "",
   });
+  const [teams, setTeams] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | saving | success | error
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -19,7 +23,7 @@ export default function AddUser() {
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const res = await fetch("https://erm-3w28.onrender.com/api/departments", {
+      const res = await fetch(`${API}/api/departments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -31,6 +35,27 @@ export default function AddUser() {
     fetchDepartments();
   }, []);
 
+  useEffect(() => {
+    const fetchTeams = async () => {
+      const res = await fetch(`${API}/api/teams`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setTeams(data);
+    };
+    fetchTeams();
+  }, []);
+
+  // a group belongs to one department, so reset it when the department changes
+  useEffect(() => {
+    setForm((f) => ({ ...f, team: "" }));
+  }, [form.department]);
+
+  const selectedDept = departments.find((d) => d._id === form.department);
+  const showGroup = !!selectedDept?.hasGroups;
+  const deptTeams = teams.filter((t) => (t.department?._id || t.department) === form.department);
+  const chosenTeam = teams.find((t) => t._id === form.team);
+
   const updateField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e) => {
@@ -39,13 +64,18 @@ export default function AddUser() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("https://erm-3w28.onrender.com/api/auth/register", {
+      const res = await fetch(`${API}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        // an employee's group is set when the account is created; a Team
+        // Leader is attached to the group right after (below)
+        body: JSON.stringify({
+          ...form,
+          team: form.role === "employee" && showGroup && form.team ? form.team : undefined,
+        }),
       });
       const data = await res.json();
 
@@ -55,6 +85,24 @@ export default function AddUser() {
         return;
       }
 
+      // Team Leader chosen for a group: make them that group's leader
+      if (form.role === "teamlead" && showGroup && form.team) {
+        const leadRes = await fetch(`${API}/api/teams/${form.team}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ teamLead: data._id }),
+        });
+        if (!leadRes.ok) {
+          const err = await leadRes.json();
+          setStatus("error");
+          setErrorMsg(`User created, but group assignment failed: ${err.message}`);
+          return;
+        }
+      }
+
       setStatus("success");
       setForm((f) => ({
         ...f,
@@ -62,6 +110,7 @@ export default function AddUser() {
         name: "",
         email: "",
         password: "",
+        team: "",
       }));
     } catch (err) {
       console.error(err);
@@ -175,6 +224,33 @@ export default function AddUser() {
               </select>
             </div>
           </div>
+
+          {showGroup && form.role !== "admin" && (
+            <div>
+              <label className="block font-mono text-xs uppercase tracking-wider text-[var(--mist)] mb-2">
+                Group
+              </label>
+              <select
+                value={form.team}
+                onChange={(e) => updateField("team", e.target.value)}
+                className="w-full bg-[var(--ink)] text-[var(--paper)] rounded-lg px-3 py-2.5 border border-[var(--panel-border)] outline-none focus:border-[var(--amber)]"
+              >
+                <option value="">— No group yet —</option>
+                {deptTeams.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-[var(--mist)] mt-1.5">
+                {form.role === "teamlead"
+                  ? chosenTeam?.teamLead
+                    ? `This will replace ${chosenTeam.teamLead.name} as the group's Team Leader.`
+                    : "They will become this group's Team Leader."
+                  : "Employees without a group can't be reviewed by any Team Leader."}
+              </p>
+            </div>
+          )}
 
           {status === "error" && (
             <div className="flex items-center gap-2 text-[var(--error)] text-sm font-medium">

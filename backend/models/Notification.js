@@ -22,6 +22,8 @@ const notificationSchema = new Schema(
         "edit_request",
         "edit_approved",
         "edit_denied",
+        "admin_review_pending",
+        "admin_review_decision",
       ],
       required: true,
     },

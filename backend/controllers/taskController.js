@@ -1,6 +1,11 @@
 const Task = require("../models/Task");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const {
+  andFilters,
+  departmentUsesGroups,
+  teamLeadUserScope,
+} = require("../utils/groupScope");
 
 // @route  POST /api/tasks
 // @desc   Team Lead assigns a task to an employee in their department, OR
@@ -18,6 +23,19 @@ const createTask = async (req, res) => {
     const assignee = await User.findById(assignedTo);
     if (!assignee) {
       return res.status(404).json({ message: "Assignee not found" });
+    }
+
+    // A Team Lead can only assign to people in their own department — or, in a
+    // department with groups, only to employees of their own group.
+    if (req.user.role === "teamlead") {
+      const allowed = await User.exists(
+        andFilters(await teamLeadUserScope(req.user), { _id: assignedTo })
+      );
+      if (!allowed) {
+        return res.status(403).json({
+          message: "Aap sirf apne group/department ke members ko task assign kar sakte ho",
+        });
+      }
     }
 
     const task = await Task.create({
@@ -68,6 +86,11 @@ const getTeamTasks = async (req, res) => {
 
     if (req.user.role === "teamlead") {
       filter.department = req.user.department; // locked to their own department
+      if (await departmentUsesGroups(req.user.department)) {
+        // ...and in a department with groups, to their own group's employees
+        const members = await User.find(await teamLeadUserScope(req.user)).select("_id");
+        filter.assignedTo = { $in: members.map((m) => m._id) };
+      }
     } else if (req.user.role === "admin") {
       if (req.query.department) filter.department = req.query.department;
       if (req.query.assignedToRole === "teamlead") {

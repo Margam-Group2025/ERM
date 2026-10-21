@@ -13,6 +13,12 @@ const departmentSchema = new Schema(
       type: String,
       trim: true,
     },
+    // true for departments organised into groups (e.g. CRM -> Group 1 / Group 2).
+    // Existing departments stay false, so nothing about them changes.
+    hasGroups: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

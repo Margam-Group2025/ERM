@@ -2,6 +2,12 @@ const Report = require("../models/Report");
 const ReportTemplate = require("../models/ReportTemplate");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const {
+  andFilters,
+  departmentUsesGroups,
+  teamLeadReportScope,
+  teamLeadCanAccessUser,
+} = require("../utils/groupScope");
 
 // @route  POST /api/reports
 // @desc   Employee (or Team Lead) submits or drafts a report.
@@ -154,6 +160,14 @@ const updateReport = async (req, res) => {
 
     if (status === "draft" || status === "submitted") report.status = status;
 
+    // A report sent back (by the Team Leader or by Admin) is resubmitted when
+    // the corrected version is saved, so it reappears in the Team Leader's
+    // pending list and any earlier Admin decision is cleared.
+    if (report.status === "sent_back") {
+      report.status = "submitted";
+      report.adminReview = { status: "none" };
+    }
+
     // the approval is used up — a future edit needs a fresh request
     report.editRequest = { status: "none" };
 
@@ -182,9 +196,11 @@ const requestEdit = async (req, res) => {
         .json({ message: "This report has already been reviewed and can no longer be edited" });
     }
 
+    // a report that was sent back for correction stays open however old it is;
+    // any other report can only be edited on the day it was submitted
     const submittedDay = report.createdAt.toISOString().split("T")[0];
     const today = new Date().toISOString().split("T")[0];
-    if (submittedDay !== today) {
+    if (report.status !== "sent_back" && submittedDay !== today) {
       return res
         .status(400)
         .json({ message: "This report can only be edited on the day it was submitted" });
@@ -194,13 +210,27 @@ const requestEdit = async (req, res) => {
       return res.status(400).json({ message: "An edit request is already pending for this report" });
     }
 
+    if (
+      req.user.role === "employee" &&
+      (await departmentUsesGroups(req.user.department)) &&
+      !req.user.team
+    ) {
+      return res.status(400).json({
+        message: "Aapko abhi koi group assign nahi hai — Admin se contact karo",
+      });
+    }
+
     report.editRequest = { status: "pending", requestedAt: new Date() };
     await report.save();
 
     // figure out who approves it
     let approvers = [];
     if (req.user.role === "employee") {
-      approvers = await User.find({ role: "teamlead", department: req.user.department });
+      const approverFilter = { role: "teamlead", department: req.user.department };
+      if (await departmentUsesGroups(req.user.department)) {
+        approverFilter.team = req.user.team; // only their own group's Team Leader
+      }
+      approvers = await User.find(approverFilter);
     } else if (req.user.role === "teamlead") {
       approvers = await User.find({ role: "admin" });
     }
@@ -232,14 +262,15 @@ const respondEditRequest = async (req, res) => {
       return res.status(400).json({ message: "decision must be approved or denied" });
     }
 
-    const report = await Report.findById(req.params.id).populate("employee", "name role department");
+    const report = await Report.findById(req.params.id).populate("employee", "name role department team");
     if (!report) {
       return res.status(404).json({ message: "Report not found" });
     }
 
     if (req.user.role === "teamlead") {
       const sameDept = report.department.toString() === req.user.department.toString();
-      if (report.employee.role !== "employee" || !sameDept) {
+      const inScope = await teamLeadCanAccessUser(req.user, report.employee); // group-aware
+      if (report.employee.role !== "employee" || !sameDept || !inScope) {
         return res.status(403).json({ message: "You can only respond to your own team's requests" });
       }
     } else if (req.user.role === "admin") {
@@ -280,8 +311,11 @@ const respondEditRequest = async (req, res) => {
 // employees; Admin sees pending requests from Team Leads.
 const getPendingEditRequests = async (req, res) => {
   try {
-    const filter = { "editRequest.status": "pending" };
-    if (req.user.role === "teamlead") filter.department = req.user.department;
+    let filter = { "editRequest.status": "pending" };
+    if (req.user.role === "teamlead") {
+      // own department, or only their own group in a department with groups
+      filter = andFilters(await teamLeadReportScope(req.user), filter);
+    }
 
     let reports = await Report.find(filter)
       .populate("employee", "name employeeId role")

@@ -1,10 +1,11 @@
 const Department = require("../models/Department");
+const Team = require("../models/Team");
 
 // @route  POST /api/departments
 // @desc   Admin creates a new department
 const createDepartment = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, hasGroups } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Department name is required" });
@@ -15,7 +16,11 @@ const createDepartment = async (req, res) => {
       return res.status(400).json({ message: "Department already exists" });
     }
 
-    const department = await Department.create({ name, description });
+    const department = await Department.create({
+      name,
+      description,
+      hasGroups: !!hasGroups,
+    });
     res.status(201).json(department);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -37,13 +42,27 @@ const getDepartments = async (req, res) => {
 // @desc   Admin updates a department
 const updateDepartment = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, hasGroups } = req.body;
 
-    const department = await Department.findByIdAndUpdate(
-      req.params.id,
-      { name, description },
-      { new: true, runValidators: true }
-    );
+    // Turning groups OFF while groups exist would silently widen every Team
+    // Leader's access to the whole department, so it's blocked.
+    if (hasGroups === false) {
+      const groupCount = await Team.countDocuments({ department: req.params.id });
+      if (groupCount > 0) {
+        return res.status(400).json({
+          message:
+            "Is department mein groups bane hue hain. Groups OFF karne se pehle unhe delete karo — warna Team Leaders poori department ki reports dekhne lagenge.",
+        });
+      }
+    }
+
+    const updateData = { name, description };
+    if (hasGroups !== undefined) updateData.hasGroups = !!hasGroups;
+
+    const department = await Department.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!department) {
       return res.status(404).json({ message: "Department not found" });

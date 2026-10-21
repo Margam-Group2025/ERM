@@ -1,27 +1,47 @@
 const ExcelJS = require("exceljs");
 const Report = require("../models/Report");
+const User = require("../models/User");
+const { andFilters, teamLeadReportScope } = require("../utils/groupScope");
 
 // @route  GET /api/reports/export
 // @desc   Admin filters any department and downloads reports as .xlsx.
 // Team Lead can also export, but only their OWN department's reports.
-// Query params: department, employee, reportType, status, startDate, endDate
+// Query params: department, team (group), employee, reportType, status,
+// adminStatus, startDate, endDate
 const exportReportsToExcel = async (req, res) => {
   try {
     const { employee, reportType, status, startDate, endDate } = req.query;
 
     const filter = {};
+    const extra = [];
+    let scope = {};
 
-    if (req.user.role === "employee") {
-      // an employee can only ever export their OWN reports
+    const wantsOwnOnly =
+      req.user.role === "employee" ||
+      (req.user.role === "teamlead" && req.query.onlyMine === "true");
+
+    if (wantsOwnOnly) {
+      // own reports only — the ?employee param is ignored here
       filter.employee = req.user._id;
-    } else if (req.user.role === "teamlead") {
-      filter.department = req.user.department; // locked, ignores query param
-      if (req.query.onlyMine === "true") filter.employee = req.user._id;
-    } else if (req.query.department) {
-      filter.department = req.query.department;
+    } else {
+      if (req.user.role === "teamlead") {
+        // own department, or only their own group in a department with groups
+        scope = await teamLeadReportScope(req.user);
+      } else {
+        // Admin-only filters
+        if (req.query.department) filter.department = req.query.department;
+        if (req.query.team) {
+          const inGroup = await User.find({ team: req.query.team }).select("_id");
+          extra.push({ employee: { $in: inGroup.map((u) => u._id) } });
+        }
+        if (req.query.adminStatus) {
+          filter["adminReview.status"] =
+            req.query.adminStatus === "none" ? { $in: ["none", null] } : req.query.adminStatus;
+        }
+      }
+      if (employee) filter.employee = employee;
     }
 
-    if (employee && req.user.role !== "employee") filter.employee = employee;
     if (reportType) filter.reportType = reportType;
     if (status) filter.status = status;
 
@@ -31,8 +51,12 @@ const exportReportsToExcel = async (req, res) => {
       if (endDate) filter.reportDate.$lte = new Date(endDate);
     }
 
-    const reports = await Report.find(filter)
-      .populate("employee", "name employeeId role")
+    const reports = await Report.find(andFilters(scope, filter, ...extra))
+      .populate({
+        path: "employee",
+        select: "name employeeId role team",
+        populate: { path: "team", select: "name" },
+      })
       .populate("department", "name")
       .populate("reportTemplate", "fields")
       .sort({ reportDate: -1 });
@@ -66,9 +90,11 @@ const exportReportsToExcel = async (req, res) => {
       { header: "Employee Name", key: "employeeName", width: 20 },
       { header: "Role", key: "role", width: 12 },
       { header: "Department", key: "department", width: 18 },
+      { header: "Group", key: "group", width: 14 },
       { header: "Report Type", key: "reportType", width: 12 },
       { header: "Report Date", key: "reportDate", width: 14 },
       { header: "Status", key: "status", width: 12 },
+      { header: "Admin Review", key: "adminReview", width: 14 },
       ...dynamicKeysArr.map((key, i) => ({
         header: labelByKey[key] || key,
         key: `dyn_${i}`,
@@ -85,9 +111,12 @@ const exportReportsToExcel = async (req, res) => {
         employeeName: r.employee?.name || "",
         role: r.employee?.role === "teamlead" ? "Team Lead" : "Employee",
         department: r.department?.name || "",
+        group: r.employee?.team?.name || "",
         reportType: r.reportType,
         reportDate: r.reportDate.toISOString().split("T")[0],
         status: r.status,
+        adminReview:
+          r.adminReview?.status && r.adminReview.status !== "none" ? r.adminReview.status : "",
       };
       dynamicKeysArr.forEach((key, i) => {
         const v = r.data?.[key];

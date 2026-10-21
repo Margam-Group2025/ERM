@@ -8,6 +8,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+const API = import.meta.env.VITE_API_URL;
+
 const ROLE_STYLES = {
   admin: "text-[var(--amber)] border-[var(--amber)]/40 bg-[var(--amber)]/10",
   teamlead: "text-[#60A5FA] border-[#60A5FA]/40 bg-[#60A5FA]/10",
@@ -27,10 +29,10 @@ export default function ManageUsers() {
     setLoading(true);
     try {
       const [deptRes, userRes] = await Promise.all([
-        fetch("https://erm-3w28.onrender.com/api/departments", {
+        fetch(`${API}/api/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("https://erm-3w28.onrender.com/api/users", {
+        fetch(`${API}/api/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -52,10 +54,18 @@ export default function ManageUsers() {
   // changing someone's role to "teamlead" doesn't automatically demote the
   // existing lead — Admin does that explicitly by changing the old lead's
   // role too, so two people can briefly co-exist if needed (e.g. handover)
+  // re-read users after a change: role changes can also move a user between
+  // groups on the server, so don't patch the list by hand
+  const refreshUsers = async () => {
+    const r = await fetch(`${API}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    if (r.ok) setUsers(d);
+  };
+
   const handleRoleChange = async (userId, newRole) => {
     setUpdatingId(userId);
     try {
-      const res = await fetch(`https://erm-3w28.onrender.com/api/users/${userId}`, {
+      const res = await fetch(`${API}/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -64,10 +74,12 @@ export default function ManageUsers() {
         body: JSON.stringify({ role: newRole }),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setUsers((prev) => prev.map((u) => (u._id === updated._id ? updated : u)));
+        await refreshUsers();
         setJustSavedId(userId);
         setTimeout(() => setJustSavedId(null), 1500);
+      } else {
+        const err = await res.json();
+        window.alert(err.message || "Update failed");
       }
     } catch (err) {
       console.error(err);
@@ -148,6 +160,10 @@ export default function ManageUsers() {
                           </p>
                           <p className="text-[var(--mist)] text-xs font-mono">
                             {member.employeeId}
+                            {member.team?.name && ` · ${member.team.name}`}
+                            {dept.hasGroups && !member.team && (
+                              <span className="text-[var(--error)]"> · no group assigned</span>
+                            )}
                           </p>
                         </div>
 

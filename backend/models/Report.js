@@ -80,6 +80,25 @@ const reportSchema = new Schema(
       ),
       default: () => ({ status: "none" }),
     },
+    // Second-level review, used only for departments with groups (e.g. CRM):
+    // once the group's Team Leader approves, the report waits here for the
+    // Admin's final decision. "none" for every other report.
+    adminReview: {
+      type: new Schema(
+        {
+          status: {
+            type: String,
+            enum: ["none", "pending", "approved", "rejected", "returned"],
+            default: "none",
+          },
+          comment: String,
+          reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
+          reviewedAt: Date,
+        },
+        { _id: false }
+      ),
+      default: () => ({ status: "none" }),
+    },
     isEdited: {
       type: Boolean,
       default: false,
@@ -100,5 +119,6 @@ const reportSchema = new Schema(
 reportSchema.index({ department: 1, reportType: 1, reportDate: -1 });
 reportSchema.index({ employee: 1, reportDate: -1 });
 reportSchema.index({ status: 1 });
+reportSchema.index({ "adminReview.status": 1 });
 
 module.exports = mongoose.model("Report", reportSchema);

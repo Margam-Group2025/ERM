@@ -1,160 +1,75 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-import ExportReports from "./pages/ExportReports";
 import Login from "./pages/Login";
-import TeamLeadDashboard from "./pages/TeamLeadDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+// employee
 import EmployeeDashboard from "./pages/EmployeeDashboard";
-import AddUser from "./pages/AddUser";
+import MyTasks from "./pages/MyTasks";
+import MyReports from "./pages/MyReports";
+import EditReport from "./pages/EditReport";
+
+// team lead
+import TeamLeadDashboard from "./pages/TeamLeadDashboard";
+import AssignTask from "./pages/AssignTask";
+import TeamExport from "./pages/TeamExport";
+import EditRequests from "./pages/EditRequest";
+
+// admin
 import AdminLayout from "./layout/AdminLayout";
 import TemplateBuilder from "./pages/TemplateBuilder";
-import AssignTask from "./pages/AssignTask";
-import MyTasks from "./pages/MyTasks";
-import ProtectedRoute from "./components/ProtectedRoute";
+import AddUser from "./pages/AddUser";
 import ManageUsers from "./pages/ManageUsers";
-import TeamExport from "./pages/TeamExport";
 import AdminReports from "./pages/AdminReports";
 import AdminTasks from "./pages/AdminTasks";
-import MyReports from "./pages/MyReports"; 
-import EditReport from "./pages/EditReport"
-import EditRequest from "./pages/EditRequest";
+import ExportReports from "./pages/ExportReports";
+import CrmGroups from "./pages/CrmGroups";
+import AdminReviewQueue from "./pages/AdminReviewQueue";
+import AdminGroupReports from "./pages/Admingroupreports";
+
+const only = (roles, element) => (
+  <ProtectedRoute allowedRoles={roles}>{element}</ProtectedRoute>
+);
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Login */}
         <Route path="/" element={<Login />} />
 
-        {/* ================= TEAM LEAD ================= */}
+        {/* Employee */}
+        <Route path="/dashboard" element={only(["employee"], <EmployeeDashboard />)} />
+        <Route path="/tasks" element={only(["employee"], <MyTasks />)} />
+        <Route path="/my-reports" element={only(["employee"], <MyReports />)} />
 
+        {/* Employee + Team Lead: edit own report (needs an approved edit request) */}
         <Route
-          path="/teamlead"
-          element={
-            <ProtectedRoute allowedRoles={["teamlead"]}>
-              <TeamLeadDashboard />
-            </ProtectedRoute>
-          }
+          path="/reports/:id/edit"
+          element={only(["employee", "teamlead"], <EditReport />)}
         />
 
-        <Route
-          path="/teamlead/tasks"
-          element={
-            <ProtectedRoute allowedRoles={["teamlead"]}>
-              <AssignTask />
-            </ProtectedRoute>
-          }
-        />
+        {/* Team Lead */}
+        <Route path="/teamlead" element={only(["teamlead"], <TeamLeadDashboard />)} />
+        <Route path="/teamlead/report" element={only(["teamlead"], <EmployeeDashboard />)} />
+        <Route path="/teamlead/tasks" element={only(["teamlead"], <AssignTask />)} />
+        <Route path="/teamlead/my-tasks" element={only(["teamlead"], <MyTasks />)} />
+        <Route path="/teamlead/my-reports" element={only(["teamlead"], <MyReports />)} />
+        <Route path="/teamlead/export" element={only(["teamlead"], <TeamExport />)} />
+        <Route path="/teamlead/edit-requests" element={only(["teamlead"], <EditRequests />)} />
 
-        <Route
-          path="/teamlead/export"
-          element={
-            <ProtectedRoute allowedRoles={["teamlead"]}>
-              <TeamExport />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Team Lead Report */}
-        <Route
-          path="/teamlead/report"
-          element={
-            <ProtectedRoute allowedRoles={["teamlead"]}>
-              <EmployeeDashboard />
-            </ProtectedRoute>
-          }
-        />
-         <Route 
-         path="/teamlead/my-reports" 
-         element={ <ProtectedRoute allowedRoles={["teamlead"]}> 
-         <MyReports />
-        </ProtectedRoute> } 
-        />
-
-        <Route 
-        path="/teamlead/my-tasks" 
-        element={ 
-            <ProtectedRoute allowedRoles={["teamlead"]}> 
-            <MyTasks />
-           </ProtectedRoute> } />
-
-        <Route 
-        path="/teamlead/edit-requests" 
-        element={ <ProtectedRoute allowedRoles={["teamlead"]}>
-           <EditRequest />
-            </ProtectedRoute> } />   
-
-        {/* ================= EMPLOYEE ================= */}
-
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["employee"]}>
-              <EmployeeDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute allowedRoles={["employee"]}>
-              <MyTasks />
-            </ProtectedRoute>
-          }
-        />
-         <Route 
-         path="/my-reports"
-          element={ <ProtectedRoute allowedRoles={["employee"]}> 
-          <MyReports /> 
-          </ProtectedRoute> } />
-
-          <Route
-           path="/reports/:id/edit"
-            element={ 
-            <ProtectedRoute 
-               allowedRoles={["employee", "teamlead"]}>
-               <EditReport /> </ProtectedRoute> } />
-        {/* ================= ADMIN ================= */}
-
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
+        {/* Admin — AdminLayout renders the sidebar, these pages render inside it */}
+        <Route path="/admin" element={only(["admin"], <AdminLayout />)}>
           <Route index element={<TemplateBuilder />} />
-
-          <Route
-            path="users"
-            element={<AddUser />}
-          />
-
-          <Route
-            path="export"
-            element={<ExportReports />}
-          />
-
-          <Route
-            path="team"
-            element={<ManageUsers />}
-          />
-
-          <Route
-            path="reports"
-            element={<AdminReports />}
-          />
-          <Route
-             path="tasks"
-             element={<AdminTasks />}
-            /> 
+          <Route path="users" element={<AddUser />} />
+          <Route path="team" element={<ManageUsers />} />
+          <Route path="groups" element={<CrmGroups />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="final-review" element={<AdminReviewQueue />} />
+          <Route path="tasks" element={<AdminTasks />} />
+          <Route path="edit-requests" element={<EditRequests />} />
+          <Route path="export" element={<ExportReports />} />
+          <Route path="group-reports" element={<AdminGroupReports />} />
         </Route>
-        <Route
-           path="edit-requests" 
-           element={<EditRequest />}
-           /> 
-         
       </Routes>
     </BrowserRouter>
   );

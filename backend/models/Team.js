@@ -21,4 +21,7 @@ const teamSchema = new Schema(
   { timestamps: true }
 );
 
+// two groups in the same department can't share a name
+teamSchema.index({ department: 1, name: 1 }, { unique: true });
+
 module.exports = mongoose.model("Team", teamSchema);
