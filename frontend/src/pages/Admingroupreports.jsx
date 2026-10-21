@@ -77,29 +77,69 @@ export default function AdminGroupReports() {
   }, [department]);
 
   // only Team Leaders' own reports for this department
+
+  // only Team Leaders' own reports for this department
   useEffect(() => {
     if (!department) return;
+
     const load = async () => {
       setLoading(true);
-      setVisible(PAGE_SIZE);
+
       try {
-        const params = new URLSearchParams({ submitterRole: "teamlead", department });
-        if (reportType) params.append("reportType", reportType);
-        if (range.startDate) params.append("startDate", range.startDate);
-        if (range.endDate) params.append("endDate", range.endDate);
-        const res = await fetch(`${API}/api/reports/team/all?${params.toString()}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const params = new URLSearchParams({
+          submitterRole: "teamlead",
+          department,
         });
+
+        if (reportType) {
+          params.append("reportType", reportType);
+        }
+
+        if (range.startDate) {
+          params.append("startDate", range.startDate);
+        }
+
+        if (range.endDate) {
+          params.append("endDate", range.endDate);
+        }
+
+        const res = await fetch(
+          `${API}/api/reports/team/all?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         const data = await res.json();
-        if (res.ok) setReports(data);
+
+        console.log(
+          "Group Reports API:",
+          `${API}/api/reports/team/all?${params}`
+        );
+        console.log("HTTP Status:", res.status);
+        console.log("Reports Response:", data);
+
+        if (!res.ok) {
+          throw new Error(
+            data.message || `Reports API failed: ${res.status}`
+          );
+        }
+
+        setReports(
+          Array.isArray(data) ? data : data.reports || []
+        );
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load group reports:", err);
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, [department, reportType, range]);
+
 
   const sortedTeams = useMemo(
     () => [...teams].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
