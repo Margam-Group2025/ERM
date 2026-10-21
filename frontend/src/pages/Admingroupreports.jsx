@@ -4,7 +4,7 @@ import { Columns2, Loader2, Inbox, Calendar, Crown, Pencil } from "lucide-react"
 import {
   buildComparisonCards,
   fieldRows
-} from "./Groupcompare.js";
+} from "./Groupcompare";
 
 const API = (
   import.meta.env.VITE_API_URL ||
