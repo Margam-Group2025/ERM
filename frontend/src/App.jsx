@@ -24,7 +24,7 @@ import AdminTasks from "./pages/AdminTasks";
 import ExportReports from "./pages/ExportReports";
 import CrmGroups from "./pages/CrmGroups";
 import AdminReviewQueue from "./pages/AdminReviewQueue";
-import AdminGroupReports from "./pages/Admingroupreports";
+import Admingroupreports from "./pages/Admingroupreports";
 
 const only = (roles, element) => (
   <ProtectedRoute allowedRoles={roles}>{element}</ProtectedRoute>
@@ -68,7 +68,7 @@ function App() {
           <Route path="tasks" element={<AdminTasks />} />
           <Route path="edit-requests" element={<EditRequests />} />
           <Route path="export" element={<ExportReports />} />
-          <Route path="group-reports" element={<AdminGroupReports />} />
+          <Route path="group-reports" element={<Admingroupreports />} />
         </Route>
       </Routes>
     </BrowserRouter>
