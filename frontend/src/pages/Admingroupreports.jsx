@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Columns2, Loader2, Inbox, Calendar, Crown, Pencil } from "lucide-react";
-import {
-  buildComparisonCards,
-  fieldRows
-} from "./Groupcompare";
+import { buildComparisonCards, fieldRows } from "./GroupCompare.jsx";
 const API = (
   import.meta.env.VITE_API_URL ||
   "https://erm-3w28.onrender.com"
