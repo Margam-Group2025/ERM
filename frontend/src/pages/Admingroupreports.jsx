@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Columns2, Loader2, Inbox, Calendar, Crown, Pencil } from "lucide-react";
-import { buildComparisonCards, fieldRows } from "./groupCompare";
+import { buildComparisonCards, fieldRows } from "./Groupcompare";
 
 const API = import.meta.env.VITE_API_URL;
 
