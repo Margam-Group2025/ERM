@@ -90,32 +90,42 @@ function reportReviewEmail({
   ]);
 }
 
-function adminReviewEmail({
-  authorName,
-  reportType,
-  decision,
-  comment,
+
+function taskAssignedEmail({
+  employeeName,
+  assignedByName,
+  title,
+  description,
+  priority,
+  deadline,
   departmentName,
   groupName,
 }) {
-  const decisionText = {
-    approved: "approved",
-    rejected: "rejected",
-    returned: "returned for correction",
-  }[decision] || decision;
-
-  return makeEmail(`Admin Review - ${reportType} Report`, [
-    `Hello ${authorName || "Employee"},`,
+  return makeEmail("New Task Assigned - ERM" + (departmentName ? ` - ${departmentName}` : ""), [
+    "Dear Admin,",
     "",
-    `Admin has ${decisionText} your ${reportType} report.`,
-    departmentName ? `Department: ${departmentName}` : null,
-    groupName ? `Group: ${groupName}` : null,
-    comment ? `Comment: ${comment}` : null,
+    "A new task has been assigned in the ERM system.",
     "",
-    "Please log in to ERM for details.",
+    "TASK DETAILS",
+    "------------------------------",
+    `Department: ${departmentName || "Not specified"}`,
+    `Group: ${groupName || "Not specified"}`,
+    `Task Title: ${title}`,
+    `Assigned To: ${employeeName || "Not specified"}`,
+    `Assigned By: ${assignedByName || "Admin/Team Leader"}`,
+    `Priority: ${priority || "Not specified"}`,
+    `Deadline: ${formatDate(deadline)}`,
+    description ? `Description: ${description}` : null,
+    "",
+    "Please log in to the ERM system for more details.",
     process.env.FRONTEND_URL || "",
+    "",
+    "Regards,",
+    "ERM Team",
+    "Margam Group",
   ]);
 }
+
 
 module.exports = {
   taskAssignedEmail,
