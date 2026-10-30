@@ -2,17 +2,25 @@ const Report = require("../models/Report");
 const ReportTemplate = require("../models/ReportTemplate");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const { sendEmail } = require("../utils/sendEmail");
 const {
   andFilters,
   departmentUsesGroups,
   teamLeadReportScope,
   teamLeadCanAccessUser,
-} = require("../utils/groupScope");
+} = require("../utils/groupscope");
+const Department = require("../models/Department");
+const Team = require("../models/Team");
+
+const {
+  reportSubmittedEmail,
+} = require("../utils/emailTemplates");
 
 // @route  POST /api/reports
 // @desc   Employee (or Team Lead) submits or drafts a report.
 // Validates the submitted `data` against the department's active template
 // so a report can never be saved with fields that don't belong to it.
+
 const createReport = async (req, res) => {
   try {
     const { reportType, reportDate, data, status } = req.body;
@@ -20,16 +28,20 @@ const createReport = async (req, res) => {
     const department = req.user.department;
 
     if (!department) {
-      return res.status(400).json({ message: "Your account has no department assigned" });
-    }
-    if (!reportType || !reportDate || !data) {
-      return res.status(400).json({ message: "reportType, reportDate and data are required" });
+      return res.status(400).json({
+        message: "Your account has no department assigned",
+      });
     }
 
-    // Team Leads can also file their own reports (spec section 3), and Admin
-    // may have defined a different form for them than for Employees —
-    // match on the submitter's actual role.
-    const templateRole = req.user.role === "teamlead" ? "teamlead" : "employee";
+    if (!reportType || !reportDate || !data) {
+      return res.status(400).json({
+        message: "reportType, reportDate and data are required",
+      });
+    }
+
+    // Select template according to the user's role
+    const templateRole =
+      req.user.role === "teamlead" ? "teamlead" : "employee";
 
     const template = await ReportTemplate.findOne({
       department,
@@ -39,20 +51,29 @@ const createReport = async (req, res) => {
     });
 
     if (!template) {
-      return res.status(404).json({ message: "No active template for your department/report type" });
+      return res.status(404).json({
+        message: "No active template for your department/report type",
+      });
     }
 
-    // check required fields from the template are actually filled in `data`
+    // Validate required fields
     const missing = template.fields
-      .filter((f) => f.required && (data[f.key] === undefined || data[f.key] === ""))
-      .map((f) => f.label);
+      .filter(
+        (field) =>
+          field.required &&
+          (data[field.key] === undefined || data[field.key] === "")
+      )
+      .map((field) => field.label);
 
-    // drafts are allowed to be incomplete, submitted reports are not
     const finalStatus = status === "draft" ? "draft" : "submitted";
+
     if (finalStatus === "submitted" && missing.length > 0) {
-      return res.status(400).json({ message: `Missing required fields: ${missing.join(", ")}` });
+      return res.status(400).json({
+        message: `Missing required fields: ${missing.join(", ")}`,
+      });
     }
 
+    // Create report
     const report = await Report.create({
       employee,
       department,
@@ -64,11 +85,73 @@ const createReport = async (req, res) => {
       status: finalStatus,
     });
 
-    res.status(201).json(report);
+    // Send email only when the report is submitted
+    if (finalStatus === "submitted") {
+      let recipients = [];
+
+      if (req.user.role === "employee") {
+        const approverFilter = {
+          role: "teamlead",
+          department: req.user.department,
+        };
+
+        // For grouped departments, notify only the employee's Team Leader
+        if (await departmentUsesGroups(req.user.department)) {
+          if (req.user.team) {
+            approverFilter.team = req.user.team;
+          } else {
+            // Do not notify unrelated Team Leaders
+            approverFilter._id = { $in: [] };
+          }
+        }
+
+        recipients = await User.find(approverFilter).select("name email");
+      } else if (req.user.role === "teamlead") {
+        // Team Leader's own report goes to Admin
+        recipients = await User.find({
+          role: "admin",
+        }).select("name email");
+      }
+
+      // Fetch department and group names before creating the email
+      const [departmentDoc, teamDoc] = await Promise.all([
+        Department.findById(department).select("name"),
+        req.user.team
+          ? Team.findById(req.user.team).select("name")
+          : Promise.resolve(null),
+      ]);
+
+      const email = reportSubmittedEmail({
+        submitterName: req.user.name,
+        reportType,
+        reportDate,
+        departmentName: departmentDoc?.name,
+        groupName: teamDoc?.name,
+      });
+
+      // Send email to the relevant recipients
+      await Promise.all(
+        recipients
+          .filter((recipient) => recipient.email)
+          .map((recipient) =>
+            sendEmail({
+              to: recipient.email,
+              ...email,
+            })
+          )
+      );
+    }
+
+    return res.status(201).json(report);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Create report error:", err);
+
+    return res.status(500).json({
+      message: err.message || "Failed to create report",
+    });
   }
 };
+
 
 // @route  GET /api/reports/mine
 // @desc   Logged-in user's own report history
@@ -335,17 +418,6 @@ const getPendingEditRequests = async (req, res) => {
   }
 };
 
-module.exports = {
-  createReport,
-  getMyReports,
-  getReportById,
-  updateReport,
-  uploadAttachment,
-  requestEdit,
-  respondEditRequest,
-  getPendingEditRequests,
-};
-
 // @route  POST /api/reports/:id/attachment
 // @desc   Attach a photo/file to a report the employee owns (multipart/form-data, field name "file")
 async function uploadAttachment(req, res) {
@@ -372,3 +444,15 @@ async function uploadAttachment(req, res) {
     res.status(500).json({ message: err.message });
   }
 }
+
+module.exports = {
+  createReport,
+  getMyReports,
+  getReportById,
+  updateReport,
+  uploadAttachment,
+  requestEdit,
+  respondEditRequest,
+  getPendingEditRequests,
+};
+

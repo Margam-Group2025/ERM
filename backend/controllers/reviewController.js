@@ -2,12 +2,19 @@ const Report = require("../models/Report");
 const User = require("../models/User");
 const Team = require("../models/Team");
 const Notification = require("../models/Notification");
+const { sendEmail } = require("../utils/sendEmail");
 const {
   andFilters,
   departmentUsesGroups,
   teamLeadReportScope,
   teamLeadCanAccessUser,
-} = require("../utils/groupScope");
+} = require("../utils/groupscope");
+const Department = require("../models/Department");
+
+const {
+  reportReviewEmail,
+  adminReviewEmail,
+} = require("../utils/emailTemplates");
 
 // employee + their CURRENT group name, used by list views for the group badge
 const EMPLOYEE_POPULATE = {
@@ -100,7 +107,8 @@ const reviewReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    const author = await User.findById(report.employee).select("name role department team");
+  const author = await User.findById(report.employee)
+  .select("name email role department team");
 
     // A Team Lead may only review reports from their own department and — in
     // a department with groups — only from the employees of their own group.
@@ -129,6 +137,48 @@ const reviewReport = async (req, res) => {
     if (sendToAdmin) report.adminReview = { status: "pending" };
 
     await report.save();
+
+    
+const [departmentDoc, groupDoc] = await Promise.all([
+  Department.findById(report.department).select("name"),
+  author?.team
+    ? Team.findById(author.team).select("name")
+    : Promise.resolve(null),
+]);
+
+const email = reportReviewEmail({
+  authorName: author?.name,
+  reportType: report.reportType,
+  decision,
+  comment,
+  departmentName: departmentDoc?.name,
+  groupName: groupDoc?.name,
+  waitingForAdmin: sendToAdmin,
+});
+
+await sendEmail({
+  to: author?.email,
+  ...email,
+});
+
+    
+// await sendEmail({
+//   to: author?.email,
+//   subject: `Your ${report.reportType} Report: ${decision.replace("_", " ")}`,
+//   text: [
+//     `Hello ${author?.name || "Employee"},`,
+//     "",
+//     `Your ${report.reportType} report has been ${decision.replace("_", " ")}.`,
+//     comment ? `Review comment: ${comment}` : "",
+//     sendToAdmin
+//       ? "Your report is now waiting for Admin's final review."
+//       : "",
+//     "",
+//     "Please log in to ERM for details.",
+//     process.env.FRONTEND_URL || "",
+//   ].filter(Boolean).join("\n"),
+// });
+
 
     if (sendToAdmin) {
       const admins = await User.find({ role: "admin" }).select("_id");
@@ -244,9 +294,52 @@ const adminReviewReport = async (req, res) => {
 
     await report.save();
 
+ const author = await User.findById(report.employee)
+  .select("name email role department team");
+
+const [departmentDoc, groupDoc] = await Promise.all([
+  Department.findById(report.department).select("name"),
+  author?.team
+    ? Team.findById(author.team).select("name")
+    : Promise.resolve(null),
+]);   
+    
+const finalDecisionText = {
+  approved: "approved",
+  rejected: "rejected",
+  returned: "returned for correction",
+}[decision];
+
+const email = adminReviewEmail({
+  authorName: author?.name,
+  reportType: report.reportType,
+  decision,
+  comment,
+  departmentName: departmentDoc?.name,
+  groupName: groupDoc?.name,
+});
+
+await sendEmail({
+  to: author?.email,
+  ...email,
+});
+// await sendEmail({
+//   to: author?.email,
+//   subject: `Admin Review - ${report.reportType} Report`,
+//   text: [
+//     `Hello ${author?.name || "Employee"},`,
+//     "",
+//     `Admin has ${finalDecisionText} your ${report.reportType} report.`,
+//     comment ? `Comment: ${comment}` : "",
+//     "",
+//     "Please log in to ERM for details.",
+//     process.env.FRONTEND_URL || "",
+//   ].filter(Boolean).join("\n"),
+// });
+
+
     // tell the author and their group's Team Leader(s)
-    const author = await User.findById(report.employee).select("name team");
-    const verb = { approved: "approved", rejected: "rejected", returned: "returned for correction" }[
+ const verb = { approved: "approved", rejected: "rejected", returned: "returned for correction" }[
       decision
     ];
     const suffix = decision !== "approved" ? `: "${comment}"` : "";

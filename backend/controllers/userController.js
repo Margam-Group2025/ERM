@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const Team = require("../models/Team");
-const { andFilters, teamLeadUserScope } = require("../utils/groupScope");
+const { andFilters, teamLeadUserScope } = require("../utils/groupscope");
 
 // @route  GET /api/users
 // @desc   Admin views all users (optionally filter by department/role via query).
@@ -112,8 +112,11 @@ const updateUser = async (req, res) => {
       }
     }
 
-    if (name !== undefined) user.name = name;
-    if (email !== undefined) user.email = email;
+   if (name !== undefined) user.name = name.trim();
+
+   if (email !== undefined) {
+  user.email = email.trim().toLowerCase();
+  }
     if (isActive !== undefined) user.isActive = isActive;
     user.role = nextRole;
     user.department = nextDept;

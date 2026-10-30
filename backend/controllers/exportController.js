@@ -1,7 +1,7 @@
 const ExcelJS = require("exceljs");
 const Report = require("../models/Report");
 const User = require("../models/User");
-const { andFilters, teamLeadReportScope } = require("../utils/groupScope");
+const { andFilters, teamLeadReportScope } = require("../utils/groupscope");
 
 // @route  GET /api/reports/export
 // @desc   Admin filters any department and downloads reports as .xlsx.

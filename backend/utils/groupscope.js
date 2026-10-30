@@ -20,20 +20,34 @@ async function departmentUsesGroups(departmentId) {
 }
 
 // Mongo filter for Report queries
+
 async function teamLeadReportScope(tl) {
   const base = { department: tl.department };
-  if (!(await departmentUsesGroups(tl.department))) return base;
 
-  // a Team Lead who hasn't been given a group yet sees nothing
-  if (!tl.team) return { ...base, employee: { $in: [] } };
+  // Non-group departments: preserve existing behavior
+  if (!(await departmentUsesGroups(tl.department))) {
+    return base;
+  }
 
+  // Fail closed: no assigned team means no reports
+  if (!tl.team) {
+    return { ...base, employee: { $in: [] } };
+  }
+
+  // Include only authors assigned to this Team Leader's group.
+  // Include the Team Leader too, so their own reports can be viewed.
   const members = await User.find({
-    role: "employee",
     department: tl.department,
     team: tl.team,
+    role: { $in: ["employee", "teamlead"] },
   }).select("_id");
-  return { ...base, employee: { $in: members.map((m) => m._id) } };
+
+  return {
+    ...base,
+    employee: { $in: members.map((member) => member._id) },
+  };
 }
+
 
 // Mongo filter for User queries (user lists, task assignee pickers)
 async function teamLeadUserScope(tl) {
