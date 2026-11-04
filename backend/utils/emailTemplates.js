@@ -10,11 +10,15 @@ const formatDate = (value) => {
 
 const makeEmail = (subject, lines) => ({
   subject,
-  text: lines.filter((line) => line !== null && line !== undefined).join("\n"),
+  text: lines
+    .filter((line) => line !== null && line !== undefined)
+    .join("\n"),
 });
 
+// Task assigned email
 function taskAssignedEmail({
   employeeName,
+  assignedByName,
   title,
   description,
   priority,
@@ -22,22 +26,35 @@ function taskAssignedEmail({
   departmentName,
   groupName,
 }) {
-  return makeEmail("New Task Assigned - ERM", [
-    `Hello ${employeeName || "Employee"},`,
-    "",
-    "A new task has been assigned to you.",
-    `Task: ${title}`,
-    description ? `Description: ${description}` : null,
-    priority ? `Priority: ${priority}` : null,
-    `Deadline: ${formatDate(deadline)}`,
-    departmentName ? `Department: ${departmentName}` : null,
-    groupName ? `Group: ${groupName}` : null,
-    "",
-    "Please log in to ERM to view your task.",
-    process.env.FRONTEND_URL || "",
-  ]);
+  return makeEmail(
+    `New Task Assigned - ERM${departmentName ? ` - ${departmentName}` : ""}`,
+    [
+      "Dear Admin,",
+      "",
+      "A new task has been assigned in the ERM system.",
+      "",
+      "TASK DETAILS",
+      "------------------------------",
+      `Department: ${departmentName || "Not specified"}`,
+      `Group: ${groupName || "Not specified"}`,
+      `Task Title: ${title || "Not specified"}`,
+      `Assigned To: ${employeeName || "Not specified"}`,
+      `Assigned By: ${assignedByName || "Admin/Team Leader"}`,
+      `Priority: ${priority || "Not specified"}`,
+      `Deadline: ${formatDate(deadline)}`,
+      description ? `Description: ${description}` : null,
+      "",
+      "Please log in to the ERM system for more details.",
+      process.env.FRONTEND_URL || "",
+      "",
+      "Regards,",
+      "ERM Team",
+      "Margam Group",
+    ]
+  );
 }
 
+// Report submitted email
 function reportSubmittedEmail({
   recipientName,
   submitterName,
@@ -59,6 +76,7 @@ function reportSubmittedEmail({
   ]);
 }
 
+// Report review email
 function reportReviewEmail({
   authorName,
   reportType,
@@ -90,34 +108,27 @@ function reportReviewEmail({
   ]);
 }
 
-
-function taskAssignedEmail({
-  employeeName,
-  assignedByName,
-  title,
-  description,
-  priority,
-  deadline,
+// Admin final review email
+function adminReviewEmail({
+  adminName,
+  submitterName,
+  reportType,
+  reportDate,
   departmentName,
   groupName,
 }) {
-  return makeEmail("New Task Assigned - ERM" + (departmentName ? ` - ${departmentName}` : ""), [
-    "Dear Admin,",
+  return makeEmail("Report Waiting for Admin Review", [
+    `Hello ${adminName || "Admin"},`,
     "",
-    "A new task has been assigned in the ERM system.",
+    "A report is waiting for your final review.",
     "",
-    "TASK DETAILS",
-    "------------------------------",
+    `Submitted By: ${submitterName || "Not specified"}`,
+    `Report Type: ${reportType || "Not specified"}`,
+    `Report Date: ${formatDate(reportDate)}`,
     `Department: ${departmentName || "Not specified"}`,
     `Group: ${groupName || "Not specified"}`,
-    `Task Title: ${title}`,
-    `Assigned To: ${employeeName || "Not specified"}`,
-    `Assigned By: ${assignedByName || "Admin/Team Leader"}`,
-    `Priority: ${priority || "Not specified"}`,
-    `Deadline: ${formatDate(deadline)}`,
-    description ? `Description: ${description}` : null,
     "",
-    "Please log in to the ERM system for more details.",
+    "Please log in to ERM to review the report.",
     process.env.FRONTEND_URL || "",
     "",
     "Regards,",
@@ -125,7 +136,6 @@ function taskAssignedEmail({
     "Margam Group",
   ]);
 }
-
 
 module.exports = {
   taskAssignedEmail,
