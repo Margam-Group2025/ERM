@@ -1,52 +1,87 @@
-// middleware/upload.js
-const multer = require("multer");
-const streamifier = require("streamifier"); // npm install streamifier
-const cloudinary = require("../config/cloudinary");
 
-// Step 1: hold the file in memory (no disk write)
+const multer = require("multer");
+const streamifier = require("streamifier");
+const cloudinary = require("../config/cloudinary");
+const path = require("path");
+
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedExtensions = [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".webp",
+      ".pdf",
+      ".doc",
+      ".docx",
+      ".xls",
+      ".xlsx",
+      ".ppt",
+      ".pptx",
+    ];
+
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (allowedExtensions.includes(ext)) {
+      return cb(null, true);
+    }
+
+    cb(new Error("Unsupported file format."));
+  },
 });
 
-// Step 2: after multer parses the file, push it to Cloudinary
-// and reshape req.file to look like what CloudinaryStorage used to produce
 const uploadToCloudinary = (fieldName) => {
   const multerMiddleware = upload.single(fieldName);
 
   return (req, res, next) => {
     multerMiddleware(req, res, async (err) => {
       if (err) return next(err);
-      if (!req.file) return next(); // no file attached, let controller decide
+      if (!req.file) return next();
 
       try {
-        const streamUpload = () =>
-          new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-              {
-                folder: "erm-report-attachments",
-                allowed_formats: ["jpg", "jpeg", "png", "webp", "pdf"],
-                resource_type: "auto",
-              },
-              (error, result) => {
-                if (result) resolve(result);
-                else reject(error);
-              }
-            );
-            streamifier.createReadStream(req.file.buffer).pipe(stream);
-          });
+        const ext = path.extname(req.file.originalname).toLowerCase();
 
-        const result = await streamUpload();
+        const isImage = [
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".webp",
+        ].includes(ext);
 
-        // reshape req.file so downstream controller code keeps working unchanged
-        req.file.path = result.secure_url;       // was the Cloudinary URL before
-        req.file.filename = result.public_id;    // was the Cloudinary public_id before
-        req.file.cloudinaryResult = result;       // full result, in case you need more later
+        const resourceType = isImage ? "image" : "raw";
+
+        const result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            {
+              folder: "erm-report-attachments",
+              resource_type: resourceType,
+              use_filename: true,
+              unique_filename: true,
+            },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
+            }
+          );
+
+          streamifier
+            .createReadStream(req.file.buffer)
+            .pipe(stream);
+        });
+
+        req.file.path = result.secure_url;
+        req.file.filename = result.public_id;
+        req.file.cloudinaryResult = result;
 
         next();
       } catch (uploadErr) {
+        console.error("Cloudinary Upload Error:", uploadErr);
         next(uploadErr);
       }
     });

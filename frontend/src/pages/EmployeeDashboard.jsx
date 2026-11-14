@@ -129,27 +129,43 @@ export default function EmployeeDashboard() {
 
   // for "file" type fields: upload immediately on selection, store the
   // resulting URL as the field's value (same as any other field's value)
-  const handleFileFieldUpload = async (key, file) => {
-    if (!file) return;
-    setUploadingField(key);
-    try {
-      const uploadData = new FormData();
-      uploadData.append("file", file);
-      const res = await fetch(`${API}/api/uploads`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: uploadData,
-      });
-      const result = await res.json();
-      if (res.ok) {
-        handleFieldChange(key, result.url);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploadingField(null);
+  
+const handleFileFieldUpload = async (key, file) => {
+  if (!file) return;
+
+  setUploadingField(key);
+  setErrorMsg("");
+
+  try {
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+
+    const res = await fetch(`${API}/api/uploads`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: uploadData,
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.message || `Upload failed (${res.status})`);
     }
-  };
+
+    if (!result.url) {
+      throw new Error("Upload completed but file URL was not returned.");
+    }
+
+    handleFieldChange(key, result.url);
+  } catch (err) {
+    console.error("FILE UPLOAD ERROR:", err);
+    setErrorMsg(err.message || "File upload failed.");
+  } finally {
+    setUploadingField(null);
+  }
+};
 
   const handleSubmit = async (status) => {
     setSubmitStatus("saving");
@@ -279,7 +295,7 @@ export default function EmployeeDashboard() {
                 : "Choose a photo or PDF"}
               <input
                 type="file"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                 onChange={(e) => handleFileFieldUpload(field.key, e.target.files[0])}
                 className="hidden"
                 disabled={uploadingField === field.key}
