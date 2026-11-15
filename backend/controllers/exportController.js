@@ -45,12 +45,30 @@ const exportReportsToExcel = async (req, res) => {
     if (reportType) filter.reportType = reportType;
     if (status) filter.status = status;
 
-    if (startDate || endDate) {
-      filter.reportDate = {};
-      if (startDate) filter.reportDate.$gte = new Date(startDate);
-      if (endDate) filter.reportDate.$lte = new Date(endDate);
-    }
+   if (startDate || endDate) {
+  filter.reportDate = {};
 
+  if (startDate) {
+    filter.reportDate.$gte = new Date(
+      `${startDate}T00:00:00.000+05:30`
+    );
+  }
+
+  if (endDate) {
+    filter.reportDate.$lte = new Date(
+      `${endDate}T23:59:59.999+05:30`
+    );
+  }
+}
+    console.log("EXPORT FILTER:", {
+    role: req.user.role,
+    department: req.query.department,
+    team: req.query.team,
+    reportType,
+    status,
+    startDate,
+    endDate,
+   });
     const reports = await Report.find(andFilters(scope, filter, ...extra))
       .populate({
         path: "employee",
