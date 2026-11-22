@@ -113,6 +113,7 @@ const createReport = async (req, res) => {
         }).select("name email");
       }
 
+     
       // Fetch department and group names before creating the email
       const [departmentDoc, teamDoc] = await Promise.all([
         Department.findById(department).select("name"),
@@ -121,34 +122,42 @@ const createReport = async (req, res) => {
           : Promise.resolve(null),
       ]);
 
-      const email = reportSubmittedEmail({
-        submitterName: req.user.name,
-        reportType,
-        reportDate,
-        departmentName: departmentDoc?.name,
-        groupName: teamDoc?.name,
-      });
-
-      // Send email to the relevant recipients
+      // Send email separately to each recipient
       await Promise.all(
         recipients
           .filter((recipient) => recipient.email)
-          .map((recipient) =>
-            sendEmail({
+          .map(async (recipient) => {
+            // Generate personalized email for each recipient
+            const email = reportSubmittedEmail({
+              recipientName: recipient.name,
+              submitterName: req.user.name,
+              reportType,
+              reportDate,
+              departmentName: departmentDoc?.name,
+              groupName: teamDoc?.name,
+            });
+
+            // Send HTML + text email through Resend
+            const emailResult = await sendEmail({
               to: recipient.email,
               ...email,
-            })
-          )
+            });
+
+            if (!emailResult.success) {
+              console.error(
+                "Report submission email failed:",
+                recipient.email
+              );
+            }
+          })
       );
     }
 
-    return res.status(201).json(report);
-  } catch (err) {
-    console.error("Create report error:", err);
-
-    return res.status(500).json({
-      message: err.message || "Failed to create report",
-    });
+    res.status(201).json(report);
+  }
+  catch (err) {
+    console.error("Error creating report:", err);
+    res.status(500).json({ message: err.message });
   }
 };
 
